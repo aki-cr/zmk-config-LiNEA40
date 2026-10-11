@@ -94,13 +94,10 @@ static int accel_handle_event(const struct device *dev, struct input_event *even
     if (cfg->settings_slot == 1) {
         factor = (int32_t)((int64_t)factor * linea_setting_get(LINEA_SET_CURSOR_SPEED, 1000) / 1000);
         /* 精密モード: ドライバーの snipe と同じく、いちばん上のレイヤーが Precision のとき */
-        /* レイヤーはキーマップを持つ右手側（セントラル）にしか無い。左手側では使わない */
-#if !IS_ENABLED(CONFIG_ZMK_SPLIT) || IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
         if (cfg->precision_layer >= 0 && zmk_keymap_highest_layer_active() == cfg->precision_layer) {
             int32_t div = linea_setting_get(LINEA_SET_PRECISION_DIVISOR, cfg->precision_divisor);
             factor /= MAX(div, 1);
         }
-#endif
     } else if (cfg->settings_slot == 2) {
         factor = (int32_t)((int64_t)factor * linea_setting_get(LINEA_SET_SCROLL_SPEED, 1000) / 1000);
     }
