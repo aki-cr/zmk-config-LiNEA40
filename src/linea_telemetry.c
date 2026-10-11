@@ -22,7 +22,7 @@
 /* 4a4e980b-132a-4338-9860-d6d20d9cb207 */
 static struct bt_uuid_128 svc_uuid =
     BT_UUID_INIT_128(BT_UUID_128_ENCODE(0x4a4e980b, 0x132a, 0x4338, 0x9860, 0xd6d20d9cb207));
-/* 999f06e0-c35d-41fd-b8f6-90c8a2705140 */
+/* 999f06e0-c35d-41fd-90c8-0000a2705140（BT_UUID_128_ENCODE の5つ目は48ビット） */
 static struct bt_uuid_128 chr_uuid =
     BT_UUID_INIT_128(BT_UUID_128_ENCODE(0x999f06e0, 0xc35d, 0x41fd, 0x90c8, 0xa2705140));
 
