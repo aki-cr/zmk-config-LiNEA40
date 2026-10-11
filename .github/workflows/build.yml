@@ -1,5 +1,29 @@
 on: [push, pull_request, workflow_dispatch]
 
+# リリースの作成に書き込み権限が要る
+permissions:
+  contents: write
+
 jobs:
   build:
     uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@v0.2.1
+
+  # LiNEA40 Studio がログインなしでダウンロードできるよう、ビルドしたファームを
+  # リリース「fw-<コミットの先頭7文字>」として公開する（Artifacts はログインしないと取れないため）
+  release:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: firmware
+          path: firmware
+      - name: Publish firmware for LiNEA40 Studio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="fw-${GITHUB_SHA::7}"
+          ls -la firmware
+          gh release create "$tag" firmware/*.uf2 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "$tag" --notes "LiNEA40 Studio 用のファーム（${GITHUB_SHA}）" --prerelease
