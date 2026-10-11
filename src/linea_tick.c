@@ -17,8 +17,11 @@
 #include <zephyr/sys/util.h>
 #include <drivers/input_processor.h>
 
+#include "linea_settings.h"
+
 struct tick_config {
     int32_t max_carry;
+    int32_t enable_default; /* 0 なら、LiNEA40 Studio でオンにするまで何もしない */
 };
 
 struct tick_data {
@@ -36,6 +39,11 @@ static int tick_handle_event(const struct device *dev, struct input_event *event
     if (event->type != INPUT_EV_REL || (event->code != INPUT_REL_WHEEL && event->code != INPUT_REL_HWHEEL)) {
         return ZMK_INPUT_PROC_CONTINUE;
     }
+    /* LiNEA40 Studio から切り替えられる（オフならまとめて送る） */
+    if (!linea_setting_get(LINEA_SET_SCROLL_TICK_ON, cfg->enable_default)) {
+        return ZMK_INPUT_PROC_CONTINUE;
+    }
+    int32_t max_carry = linea_setting_get(LINEA_SET_SCROLL_MAX_CARRY, cfg->max_carry);
 
     /* しばらく止まっていたら持ち越しを捨てる（止めたのに後から動かないように） */
     int64_t now = k_uptime_get();
@@ -74,7 +82,7 @@ static int tick_handle_event(const struct device *dev, struct input_event *event
     }
     int32_t total = event->value + *carry;
     int32_t out = CLAMP(total, -1, 1);
-    *carry = CLAMP(total - out, -cfg->max_carry, cfg->max_carry);
+    *carry = CLAMP(total - out, -max_carry, max_carry);
     event->value = out;
 
     return ZMK_INPUT_PROC_CONTINUE;
@@ -87,6 +95,7 @@ static struct zmk_input_processor_driver_api tick_driver_api = {
 #define TICK_INST(n)                                                                               \
     static const struct tick_config tick_config_##n = {                                            \
         .max_carry = DT_INST_PROP(n, max_carry),                                                   \
+        .enable_default = DT_INST_PROP(n, enable_default),                                         \
     };                                                                                             \
     static struct tick_data tick_data_##n;                                                         \
     DEVICE_DT_INST_DEFINE(n, NULL, NULL, &tick_data_##n, &tick_config_##n, POST_KERNEL,            \
