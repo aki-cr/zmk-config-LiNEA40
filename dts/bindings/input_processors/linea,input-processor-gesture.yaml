@@ -1,0 +1,32 @@
+description: |
+  LiNEA40 用の Gesture。指定レイヤーにいる間、トラボを上下左右に一定量転がすと、
+  そのレイヤーの up/down/left/right の位置に置いたキーを1回押す（カーソルは動かさない）。
+
+compatible: "linea,input-processor-gesture"
+
+include: ip_zero_param.yaml
+
+properties:
+  layer:
+    type: int
+    required: true
+  up:
+    type: int
+    required: true
+  down:
+    type: int
+    required: true
+  left:
+    type: int
+    required: true
+  right:
+    type: int
+    required: true
+  threshold:
+    type: int
+    default: 40
+    description: これだけ転がしたら1回（センサーの単位）
+  idle-ms:
+    type: int
+    default: 250
+    description: これだけ止まったら次を受け付ける
