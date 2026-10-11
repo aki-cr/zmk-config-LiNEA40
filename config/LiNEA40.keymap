@@ -51,15 +51,15 @@
             speed-high = <19>;
         };
 
-        // トラボでのスクロールの加速（ゆっくり転がすと控えめ、速く転がすと大きく）
-        // 倍率の差が大きいと、弾いたあとボールが減速するところで急に止まる感じになるので、なだらかにしている
+        // トラボでのスクロールの細かさ: ゆっくり転がしたときだけ細かく（2倍）、速く弾いたときは等倍。
+        // 1/20 だとゆっくり転がしたときにホイールの信号がまばらになり、カクカク詰まって感じるため（Conductor 比較で確認）
         linea_accel_scroll: linea_accel_scroll {
             compatible = "linea,input-processor-accel";
             #input-processor-cells = <0>;
-            min-factor-milli = <800>;
-            max-factor-milli = <1600>;
+            min-factor-milli = <2000>;
+            max-factor-milli = <1000>;
             speed-low = <2>;
-            speed-high = <14>;
+            speed-high = <10>;
         };
 
         // Gesture: Gesture レイヤーでトラボを上下左右に転がすと、そのレイヤーの I / , / J / L に置いたキーを1回押す
@@ -115,9 +115,10 @@
         // 方向はドライバーのスクロールと同じ（上下は反転、左右はそのまま）
         input-processors =
             <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>,
+            <&linea_accel_scroll>,
             <&zip_xy_to_scroll_mapper>,
             <&zip_scroll_scaler 1 20>;
-        // 加速（linea_accel_scroll）はかけない: Mac 側のホイールの加速と重なって、減速時に急に止まる感じになるため。
+        // linea_accel_scroll はゆっくりのときだけ細かくする向き（速いほど倍率を上げる加速は、Mac 側の加速と重なって減速時に急に止まるので使わない）
         // 動いた量に一定の割合（1/20）でスクロールする。Conductor は1回弾くと 1〜2 行ずつ計 15〜20 行ほど送るので、それに合わせた。
         // 1/5 だと1回に最大10行・計100行近くを送り、Mac Mouse Fix の慣性が途中で途切れて急に止まっていた
     };
