@@ -56,10 +56,10 @@
         linea_accel_scroll: linea_accel_scroll {
             compatible = "linea,input-processor-accel";
             #input-processor-cells = <0>;
-            min-factor-milli = <2000>;
-            max-factor-milli = <1000>;
+            min-factor-milli = <800>;
+            max-factor-milli = <1600>;
             speed-low = <2>;
-            speed-high = <10>;
+            speed-high = <14>;
             // Conductor と同じく約15ms おきにまとめて送る（8ms おきだと Mac Mouse Fix の連続スクロールの加速が効かず、途中で詰まる）
             min-interval-ms = <15>;
         };
@@ -119,7 +119,7 @@
             <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>,
             <&linea_accel_scroll>,
             <&zip_xy_to_scroll_mapper>,
-            <&zip_scroll_scaler 1 20>;
+            <&zip_scroll_scaler 1 5>;
         // linea_accel_scroll はゆっくりのときだけ細かくする向き（速いほど倍率を上げる加速は、Mac 側の加速と重なって減速時に急に止まるので使わない）
         // 動いた量に一定の割合（1/20）でスクロールする。Conductor は1回弾くと 1〜2 行ずつ計 15〜20 行ほど送るので、それに合わせた。
         // 1/5 だと1回に最大10行・計100行近くを送り、Mac Mouse Fix の慣性が途中で途切れて急に止まっていた
