@@ -83,7 +83,9 @@ static int gesture_handle_event(const struct device *dev, struct input_event *ev
         }
     }
 
-    /* Gesture 中はカーソルを動かさない */
+    /* Gesture 中はカーソルを動かさない。ZMK v0.2.1 はレイヤー別の設定の中で STOP を返しても無視して
+     * カーソルに渡してしまう（input_listener.c の filter_with_input_config が 0 を返す）ので、移動量も 0 にする */
+    event->value = 0;
     return ZMK_INPUT_PROC_STOP;
 }
 
