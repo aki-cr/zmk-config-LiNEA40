@@ -7,6 +7,9 @@
  *   レイヤー: [0x02, いちばん上のレイヤー番号, 有効なレイヤーのビット列(4バイト, リトルエンディアン)]
  *   キー:     [0x01, キーの番号, 1=押した / 0=離した]
  * 読み出すと、今のレイヤーのデータが返る。
+ *
+ * USB だけでつないでいるときは Bluetooth の知らせが届かないので、レイヤーはメディアキーの信号でも知らせる:
+ *   Consumer ページの 0xFE0 + いちばん上のレイヤー番号 を押して離す（未割り当ての番号なので Mac では何も起きない）
  */
 #include <zephyr/kernel.h>
 #include <zephyr/bluetooth/bluetooth.h>
@@ -14,6 +17,9 @@
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/sys/byteorder.h>
 
+#include <dt-bindings/zmk/hid_usage_pages.h>
+#include <zmk/endpoints.h>
+#include <zmk/hid.h>
 #include <zmk/event_manager.h>
 #include <zmk/keymap.h>
 #include <zmk/events/layer_state_changed.h>
@@ -62,6 +68,12 @@ static int telemetry_listener(const zmk_event_t *eh) {
         uint8_t frame[6];
         make_layer_frame(frame);
         send(frame, sizeof(frame));
+        /* USB でも届くように、未割り当てのメディアキーの番号でも知らせる */
+        zmk_key_t usage = 0xFE0 + (frame[1] & 0x0F);
+        zmk_hid_consumer_press(usage);
+        zmk_endpoints_send_report(HID_USAGE_CONSUMER);
+        zmk_hid_consumer_release(usage);
+        zmk_endpoints_send_report(HID_USAGE_CONSUMER);
     }
     return ZMK_EV_EVENT_BUBBLE;
 }
