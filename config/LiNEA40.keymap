@@ -52,13 +52,14 @@
         };
 
         // トラボでのスクロールの加速（ゆっくり転がすと控えめ、速く転がすと大きく）
+        // 倍率の差が大きいと、弾いたあとボールが減速するところで急に止まる感じになるので、なだらかにしている
         linea_accel_scroll: linea_accel_scroll {
             compatible = "linea,input-processor-accel";
             #input-processor-cells = <0>;
-            min-factor-milli = <500>;
+            min-factor-milli = <800>;
             max-factor-milli = <1600>;
             speed-low = <2>;
-            speed-high = <12>;
+            speed-high = <14>;
         };
 
         // Gesture: Gesture レイヤーでトラボを上下左右に転がすと、そのレイヤーの I / , / J / L に置いたキーを1回押す
@@ -116,7 +117,7 @@
             <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>,
             <&linea_accel_scroll>,
             <&zip_xy_to_scroll_mapper>,
-            <&zip_scroll_scaler 1 4>;
+            <&zip_scroll_scaler 1 5>;
     };
 };
 
