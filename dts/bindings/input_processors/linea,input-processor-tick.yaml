@@ -11,3 +11,9 @@ properties:
     type: int
     default: 3
     description: 持ち越す段数の上限
+  fast-milli:
+    type: int
+    default: 2000
+    description: |
+      1回の報告あたりこの段数（1000 = 1段）を超えて弾いたら「速い」とみなし、そのあと遅くなった惰性の分は送らない。
+      0 にすると惰性も全部送る
