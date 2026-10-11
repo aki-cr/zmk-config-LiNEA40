@@ -842,8 +842,7 @@ static int linea_hold_tap_listener(const zmk_event_t *eh) {
     return ZMK_EV_EVENT_BUBBLE;
 }
 
-// 名前は ZMK と同じ behavior_hold_tap にする。ZMK は知らせを受け取る順番を名前の順で決めていて、
-// keymap や combo より先に受け取らないと、長押しの判定が決まるまでキーを止めておけない（linea_hold_tap にしたら長押しがおかしくなった）
+// 知らせを受け取る順番は、部品を並べた順（CMakeLists.txt で ZMK 本体の keymap・combo より前に入れている）
 ZMK_LISTENER(behavior_hold_tap, linea_hold_tap_listener);
 ZMK_SUBSCRIPTION(behavior_hold_tap, zmk_position_state_changed);
 // this should be modifiers_state_changed, but unfrotunately that's not implemented yet.

@@ -12,9 +12,11 @@ if(CONFIG_ZMK_BLE AND (CONFIG_ZMK_SPLIT_ROLE_CENTRAL OR NOT CONFIG_ZMK_SPLIT))
   zephyr_library_include_directories(${APPLICATION_SOURCE_DIR}/include)
 endif()
 
-# 長押しの判定（hold-tap）とオートマウスの LiNEA40 用の部品。キーマップを持つ右手側（セントラル）でだけ使う
+# 長押しの判定（hold-tap）とオートマウスの LiNEA40 用の部品。キーマップを持つ右手側（セントラル）でだけ使う。
+# ZMK はキーの知らせを「部品を並べた順」に配るので、ZMK と同じく keymap・combo より前に受け取れるよう、
+# 別の部品の束（zephyr_library）ではなく ZMK 本体（app）に、ZMK の部品より先に入れる。
+# 並びは ZMK と同じ: オートマウス（zip_temp_layer の位置）→ 長押しの判定 →（ZMK の combo・keymap）
+# （別の束に入れたら keymap より後になり、長押しがほかのキーで決まらず、判定時間を待つようになった）
 if((NOT CONFIG_ZMK_SPLIT) OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
-  zephyr_library_named(linea_central)
-  zephyr_library_sources(src/linea_hold_tap.c src/linea_aml.c)
-  zephyr_library_include_directories(${APPLICATION_SOURCE_DIR}/include)
+  target_sources(app PRIVATE src/linea_aml.c src/linea_hold_tap.c)
 endif()
