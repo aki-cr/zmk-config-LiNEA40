@@ -116,9 +116,10 @@
         input-processors =
             <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>,
             <&zip_xy_to_scroll_mapper>,
-            <&zip_scroll_scaler 1 5>;
+            <&zip_scroll_scaler 1 20>;
         // 加速（linea_accel_scroll）はかけない: Mac 側のホイールの加速と重なって、減速時に急に止まる感じになるため。
-        // エンコーダーと同じく、動いた量に一定の割合（1/5）でスクロールする
+        // 動いた量に一定の割合（1/20）でスクロールする。Conductor は1回弾くと 1〜2 行ずつ計 15〜20 行ほど送るので、それに合わせた。
+        // 1/5 だと1回に最大10行・計100行近くを送り、Mac Mouse Fix の慣性が途中で途切れて急に止まっていた
     };
 };
 
