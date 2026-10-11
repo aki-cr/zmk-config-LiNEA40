@@ -115,7 +115,6 @@
         // 方向はドライバーのスクロールと同じ（上下は反転、左右はそのまま）
         input-processors =
             <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>,
-            <&linea_accel_scroll>,
             <&zip_xy_to_scroll_mapper>,
             <&zip_scroll_scaler 1 5>;
         // 加速（linea_accel_scroll）はかけない: Mac 側のホイールの加速と重なって、減速時に急に止まる感じになるため。
