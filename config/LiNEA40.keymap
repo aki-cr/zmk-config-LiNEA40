@@ -66,11 +66,12 @@
             compatible = "linea,input-processor-gesture";
             #input-processor-cells = <0>;
             layer = <GESTURE>;
-            // 転がす方向 → Gesture レイヤーのこの位置のキーを押す（上=⌃↑ Mission Control / 下=⌃↓ アプリのウインドウ / 左=⌃← / 右=⌃→）
-            up = <27>;
-            down = <7>;
-            left = <18>;
-            right = <16>;
+            // 転がす方向 → Gesture レイヤーのこの位置のキーを押す（Conductor と同じ）
+            // 上=I ⌃↓（アプリのウインドウ） / 下=, ⌃↑（Mission Control） / 左=J ⌃→ / 右=L ⌃←
+            up = <7>;
+            down = <27>;
+            left = <16>;
+            right = <18>;
             threshold = <40>;
             idle-ms = <250>;
         };
