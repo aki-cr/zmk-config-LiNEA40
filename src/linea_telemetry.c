@@ -15,6 +15,7 @@
  *   - 送り待ちがあふれたら、その知らせは捨てる（待たない）
  *   - Bluetooth の知らせは、相手が受け取りを申し込んでいるときだけ
  */
+#include <string.h>
 #include <zephyr/kernel.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/gatt.h>
