@@ -67,8 +67,6 @@
             compatible = "linea,input-processor-tick";
             #input-processor-cells = <0>;
             max-carry = <3>;
-            // 速く弾いた直後の惰性は送らない（素早く何回も転がすと Mac Mouse Fix が一気に加速するように。Conductor と同じ）
-            fast-milli = <2000>;
         };
 
         // Gesture: Gesture レイヤーでトラボを上下左右に転がすと、そのレイヤーの I / , / J / L に置いたキーを1回押す
