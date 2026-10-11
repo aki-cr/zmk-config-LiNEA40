@@ -17,6 +17,8 @@
 #include <zmk/behavior_queue.h>
 #include <zmk/virtual_key_position.h>
 
+#include "linea_settings.h"
+
 struct gesture_config {
     uint8_t index;
     uint8_t layer;        /* Gesture レイヤーの番号 */
@@ -69,8 +71,12 @@ static int gesture_handle_event(const struct device *dev, struct input_event *ev
         return ZMK_INPUT_PROC_CONTINUE;
     }
 
+    /* LiNEA40 Studio から変えた値があればそれを使う（ビルドせずにすぐ反映） */
+    int32_t idle_ms = linea_setting_get(LINEA_SET_GESTURE_IDLE, cfg->idle_ms);
+    int32_t threshold = linea_setting_get(LINEA_SET_GESTURE_THRESHOLD, cfg->threshold);
+
     int64_t now = k_uptime_get();
-    if (now - data->last_time > cfg->idle_ms) {
+    if (now - data->last_time > idle_ms) {
         data->ax = data->ay = 0;
         data->fired = false;
     }
@@ -82,7 +88,7 @@ static int gesture_handle_event(const struct device *dev, struct input_event *ev
         } else {
             data->ay += event->value;
         }
-        if (abs(data->ax) >= cfg->threshold || abs(data->ay) >= cfg->threshold) {
+        if (abs(data->ax) >= threshold || abs(data->ay) >= threshold) {
             int dir = abs(data->ay) >= abs(data->ax) ? (data->ay < 0 ? 0 : 1) : (data->ax < 0 ? 2 : 3);
             data->dir = dir;
             data->listener_index = state ? state->input_device_index : 0;

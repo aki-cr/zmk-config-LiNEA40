@@ -29,7 +29,19 @@ static int32_t values[LINEA_SET_COUNT] = {[0 ... LINEA_SET_COUNT - 1] = UNSET};
 static bool in_range(uint8_t id, int32_t v) {
     switch (id) {
     case LINEA_SET_CURSOR_SPEED:
+    case LINEA_SET_SCROLL_SPEED:
         return v >= 100 && v <= 8000;
+    case LINEA_SET_CURSOR_ACCEL_MIN:
+    case LINEA_SET_CURSOR_ACCEL_MAX:
+        return v >= 100 && v <= 5000;
+    case LINEA_SET_CURSOR_SPEED_LOW:
+        return v >= 0 && v <= 100;
+    case LINEA_SET_CURSOR_SPEED_HIGH:
+        return v >= 1 && v <= 200;
+    case LINEA_SET_GESTURE_THRESHOLD:
+        return v >= 5 && v <= 500;
+    case LINEA_SET_GESTURE_IDLE:
+        return v >= 50 && v <= 2000;
     default:
         return false;
     }

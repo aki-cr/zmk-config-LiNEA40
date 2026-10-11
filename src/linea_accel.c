@@ -20,7 +20,7 @@ struct accel_config {
     int32_t speed_low;
     int32_t speed_high;
     int32_t min_interval;
-    int32_t settings_slot; /* 1 = カーソル（LiNEA40 Studio から変えた速さの倍率を掛ける） */
+    int32_t settings_slot; /* LiNEA40 Studio から変えた値を使う: 1 = カーソル（速さ・加速）, 2 = スクロールの速さ */
 };
 
 struct accel_data {
@@ -31,15 +31,22 @@ struct accel_data {
     int64_t sent_x, sent_y;    /* 最後に送った時刻 */
 };
 
+/* カーソル（settings_slot 1）は、LiNEA40 Studio から変えた加速の値があればそれを使う */
 static int32_t factor_for(const struct accel_config *cfg, int32_t speed) {
-    if (speed <= cfg->speed_low) {
-        return cfg->min_milli;
+    int32_t min = cfg->min_milli, max = cfg->max_milli, low = cfg->speed_low, high = cfg->speed_high;
+    if (cfg->settings_slot == 1) {
+        min = linea_setting_get(LINEA_SET_CURSOR_ACCEL_MIN, min);
+        max = linea_setting_get(LINEA_SET_CURSOR_ACCEL_MAX, max);
+        low = linea_setting_get(LINEA_SET_CURSOR_SPEED_LOW, low);
+        high = linea_setting_get(LINEA_SET_CURSOR_SPEED_HIGH, high);
     }
-    if (speed >= cfg->speed_high || cfg->speed_high <= cfg->speed_low) {
-        return cfg->max_milli;
+    if (speed <= low) {
+        return min;
     }
-    return cfg->min_milli +
-           (cfg->max_milli - cfg->min_milli) * (speed - cfg->speed_low) / (cfg->speed_high - cfg->speed_low);
+    if (speed >= high || high <= low) {
+        return max;
+    }
+    return min + (max - min) * (speed - low) / (high - low);
 }
 
 static int accel_handle_event(const struct device *dev, struct input_event *event, uint32_t param1,
@@ -72,6 +79,8 @@ static int accel_handle_event(const struct device *dev, struct input_event *even
     /* LiNEA40 Studio から変えた速さ（CPI を変えたのと同じ）。ビルドせずにすぐ反映する */
     if (cfg->settings_slot == 1) {
         factor = (int32_t)((int64_t)factor * linea_setting_get(LINEA_SET_CURSOR_SPEED, 1000) / 1000);
+    } else if (cfg->settings_slot == 2) {
+        factor = (int32_t)((int64_t)factor * linea_setting_get(LINEA_SET_SCROLL_SPEED, 1000) / 1000);
     }
 
     int32_t *rem = event->code == INPUT_REL_X ? &data->rem_x : &data->rem_y;

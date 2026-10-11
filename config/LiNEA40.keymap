@@ -64,6 +64,13 @@
             speed-high = <14>;
         };
 
+        // トラボのスクロールの速さ。LiNEA40 Studio から変えた倍率を掛ける（ビルドせずにすぐ反映。設定が無ければ 1倍）
+        linea_scroll_speed: linea_scroll_speed {
+            compatible = "linea,input-processor-accel";
+            #input-processor-cells = <0>;
+            settings-slot = <2>;
+        };
+
         // トラボのスクロールを、エンコーダーと同じ「1回 ±1 段」の信号にそろえる（Mac Mouse Fix がエンコーダーと同じ自然な減速をかけるように）
         linea_scroll_tick: linea_scroll_tick {
             compatible = "linea,input-processor-tick";
@@ -124,6 +131,7 @@
         // 方向はドライバーのスクロールと同じ（上下は反転、左右はそのまま）
         input-processors =
             <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>,
+            <&linea_scroll_speed>,
             <&zip_xy_to_scroll_mapper>,
             <&zip_scroll_scaler 1 10>,
             <&linea_scroll_tick>;
