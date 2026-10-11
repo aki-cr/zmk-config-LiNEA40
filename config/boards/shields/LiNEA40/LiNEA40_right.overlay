@@ -59,7 +59,7 @@
         irq-gpios = <&xiao_d 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; //MOT-D6
         // automouse-layer は使わない（LiNEA40.keymap の zip_temp_layer でオートマウスを動かす）
         snipe-layers = <7>;
-        scroll-layers = <5>;
+        // scroll-layers は使わない（LiNEA40.keymap の scroller で、加速つきのスクロールにする）
         //scroll-layers = <4 5 6>;
     };
 };

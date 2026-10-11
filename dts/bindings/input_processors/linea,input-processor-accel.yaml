@@ -1,0 +1,25 @@
+description: |
+  LiNEA40 用のトラボの加速。動かす速さ（1回の報告あたりの移動量）に応じて、
+  X/Y の移動量に min〜max の倍率をかける（端数は持ち越す）。
+
+compatible: "linea,input-processor-accel"
+
+include: ip_zero_param.yaml
+
+properties:
+  min-factor-milli:
+    type: int
+    default: 1000
+    description: ゆっくり動かしたときの倍率（1000 = 1倍）
+  max-factor-milli:
+    type: int
+    default: 1000
+    description: 速く動かしたときの倍率（1000 = 1倍）
+  speed-low:
+    type: int
+    default: 2
+    description: この移動量以下は min-factor-milli
+  speed-high:
+    type: int
+    default: 20
+    description: この移動量以上は max-factor-milli（間はなめらかにつなぐ）

@@ -40,6 +40,26 @@
 
 / {
     input_processors {
+        // カーソルの加速（Conductor と同じく CPI 600 を基準に 1.3〜1.6倍）
+        linea_accel_cursor: linea_accel_cursor {
+            compatible = "linea,input-processor-accel";
+            #input-processor-cells = <0>;
+            min-factor-milli = <1300>;
+            max-factor-milli = <1600>;
+            speed-low = <4>;
+            speed-high = <19>;
+        };
+
+        // トラボでのスクロールの加速（ゆっくり転がすと控えめ、速く転がすと大きく）
+        linea_accel_scroll: linea_accel_scroll {
+            compatible = "linea,input-processor-accel";
+            #input-processor-cells = <0>;
+            min-factor-milli = <500>;
+            max-factor-milli = <1600>;
+            speed-low = <2>;
+            speed-high = <12>;
+        };
+
         zip_wheel_scaler: zip_wheel_scaler {
             compatible = "zmk,input-processor-scaler";
             #input-processor-cells = <2>;
@@ -65,14 +85,17 @@
 };
 
 &trackball_listener {
-    input-processors = <&zip_temp_layer MOUSE 60000>;
+    input-processors = <&linea_accel_cursor>, <&zip_temp_layer MOUSE 60000>;
 
     scroller {
         layers = <SCROLL>;
+        // ドライバーのスクロールはやめて、ここで動きをスクロールに変える（加速をかけるため）。
+        // 方向はドライバーのスクロールと同じ（上下は反転、左右はそのまま）
         input-processors =
             <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>,
-            //スクロール方向を逆転
-            <&zip_xy_to_scroll_mapper>;
+            <&linea_accel_scroll>,
+            <&zip_xy_to_scroll_mapper>,
+            <&zip_scroll_scaler 1 4>;
     };
 };
 

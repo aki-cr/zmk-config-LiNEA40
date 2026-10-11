@@ -1,0 +1,5 @@
+# この設定リポジトリを ZMK のモジュールとしても読み込ませる（LiNEA40 用の加速の部品を入れるため）
+build:
+  cmake: .
+  settings:
+    dts_root: .
