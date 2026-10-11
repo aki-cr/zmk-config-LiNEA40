@@ -20,9 +20,6 @@
 // quick-tap: タップしてすぐもう一度押して押し続けると、タップ側のキーが連続入力になる
 &mt { flavor = "balanced"; tapping-term-ms = <200>; quick-tap-ms = <250>; };
 &lt { flavor = "balanced"; tapping-term-ms = <200>; quick-tap-ms = <250>; };
-// 長押しの判定は、LiNEA40 Studio からすぐ変えられる LiNEA40 用の hold-tap（src/linea_hold_tap.c。動きは ZMK と同じ）を使う。上の値は変えていないときの値
-&mt { compatible = "linea,behavior-hold-tap"; };
-&lt { compatible = "linea,behavior-hold-tap"; };
 
 //mouse cursol
 
@@ -54,9 +51,6 @@
             speed-high = <19>;
             // LiNEA40 Studio から変えた「カーソルの速さ」を掛ける（ビルドせずにすぐ反映。linea_settings）
             settings-slot = <1>;
-            // 精密モード: Precision レイヤー（7）がいちばん上のときは 1/2（Conductor と同じ）。LiNEA40 Studio から変えられる
-            precision-layer = <7>;
-            precision-divisor = <2>;
         };
 
         // トラボでのスクロールの細かさ: ゆっくり転がしたときだけ細かく（2倍）、速く弾いたときは等倍。
@@ -68,21 +62,6 @@
             max-factor-milli = <1600>;
             speed-low = <2>;
             speed-high = <14>;
-            // LiNEA40 Studio から加速のオン/オフと値を変えられる（今は既定でオフ）
-            settings-slot = <3>;
-            enable-default = <0>;
-        };
-
-        // オートマウス（ZMK の zip_temp_layer と同じ動き。LiNEA40 Studio から値をすぐ変えられる）:
-        // ボールを動かすと mouse レイヤー。ほかのキーを押すか、60秒操作が無いと抜ける。
-        // 直前のキー入力から 50ms 以内の動きでは有効にしない。19番（左クリック）を押しても抜けない
-        linea_aml: linea_aml {
-            compatible = "linea,input-processor-aml";
-            #input-processor-cells = <0>;
-            layer = <MOUSE>;
-            timeout-ms = <60000>;
-            require-prior-idle-ms = <50>;
-            excluded-positions = <19>;
         };
 
         // トラボのスクロールの速さ。LiNEA40 Studio から変えた倍率を掛ける（ビルドせずにすぐ反映。設定が無ければ 1倍）
@@ -97,7 +76,6 @@
             compatible = "linea,input-processor-tick";
             #input-processor-cells = <0>;
             max-carry = <3>;
-            enable-default = <1>;
         };
 
         // Gesture: Gesture レイヤーでトラボを上下左右に転がすと、そのレイヤーの I / , / J / L に置いたキーを1回押す
@@ -132,10 +110,15 @@
     };
 };
 
-// オートマウスは linea_aml（上の input_processors の中）
+// オートマウス（Conductor と同じ動き）: ボールを動かすとレイヤー1。ほかのキーを押すか、60秒操作が無いと抜ける。
+// 直前のキー入力から 50ms 以内の動きでは有効にしない。19番（左クリック）を押しても抜けない
+&zip_temp_layer {
+    require-prior-idle-ms = <50>;
+    excluded-positions = <19>;
+};
 
 &trackball_listener {
-    input-processors = <&linea_accel_cursor>, <&linea_aml>;
+    input-processors = <&linea_accel_cursor>, <&zip_temp_layer MOUSE 60000>;
 
     gesture {
         layers = <GESTURE>;
@@ -149,7 +132,6 @@
         input-processors =
             <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>,
             <&linea_scroll_speed>,
-            <&linea_accel_scroll>,
             <&zip_xy_to_scroll_mapper>,
             <&zip_scroll_scaler 1 10>,
             <&linea_scroll_tick>;

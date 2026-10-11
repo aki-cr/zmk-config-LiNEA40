@@ -42,33 +42,6 @@ static bool in_range(uint8_t id, int32_t v) {
         return v >= 5 && v <= 500;
     case LINEA_SET_GESTURE_IDLE:
         return v >= 50 && v <= 2000;
-    case LINEA_SET_HOLD_FLAVOR:
-        return v >= 0 && v <= 3;
-    case LINEA_SET_HOLD_TAPPING_TERM:
-        return v >= 50 && v <= 1000;
-    case LINEA_SET_HOLD_QUICK_TAP:
-        return v >= 0 && v <= 1000;
-    case LINEA_SET_PRECISION_DIVISOR:
-        return v >= 1 && v <= 10;
-    case LINEA_SET_SCROLL_ACCEL_ON:
-    case LINEA_SET_SCROLL_TICK_ON:
-        return v == 0 || v == 1;
-    case LINEA_SET_SCROLL_ACCEL_MIN:
-    case LINEA_SET_SCROLL_ACCEL_MAX:
-        return v >= 100 && v <= 5000;
-    case LINEA_SET_SCROLL_SPEED_LOW:
-        return v >= 0 && v <= 100;
-    case LINEA_SET_SCROLL_SPEED_HIGH:
-        return v >= 1 && v <= 200;
-    case LINEA_SET_SCROLL_MAX_CARRY:
-        return v >= 0 && v <= 20;
-    case LINEA_SET_AML_TIMEOUT:
-        return v >= 100 && v <= 600000;
-    case LINEA_SET_AML_PRIOR_IDLE:
-        return v >= 0 && v <= 2000;
-    case LINEA_SET_AML_EXCL_LO:
-    case LINEA_SET_AML_EXCL_HI:
-        return v != 0x7fffffff; /* ビットの並びなので、設定なしの印以外は何でもよい */
     default:
         return false;
     }
