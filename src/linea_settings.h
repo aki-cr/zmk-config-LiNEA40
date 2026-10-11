@@ -16,6 +16,21 @@ enum linea_setting_id {
     LINEA_SET_SCROLL_SPEED = 6,     /* トラボのスクロールの速さの倍率（1000 = 1倍） */
     LINEA_SET_GESTURE_THRESHOLD = 7, /* Gesture: これだけ転がしたら1回 */
     LINEA_SET_GESTURE_IDLE = 8,     /* Gesture: これだけ止まったら次を受け付ける（ms） */
+    LINEA_SET_HOLD_FLAVOR = 9,      /* 長押しの判定のしかた: 0 ホールド優先 1 バランス 2 タップ優先 3 tap-unless-interrupted */
+    LINEA_SET_HOLD_TAPPING_TERM = 10, /* 長押しと判定するまで（ms） */
+    LINEA_SET_HOLD_QUICK_TAP = 11,  /* quick-tap（ms。0 = なし） */
+    LINEA_SET_PRECISION_DIVISOR = 12, /* 精密モード（Precision レイヤー）でカーソルを 1/N にする */
+    LINEA_SET_SCROLL_ACCEL_ON = 13, /* トラボのスクロールの加速: 1 = あり 0 = なし */
+    LINEA_SET_SCROLL_ACCEL_MIN = 14, /* スクロールの加速: ゆっくりのときの倍率 */
+    LINEA_SET_SCROLL_ACCEL_MAX = 15, /* 速いときの倍率 */
+    LINEA_SET_SCROLL_SPEED_LOW = 16, /* この移動量以下はゆっくり扱い */
+    LINEA_SET_SCROLL_SPEED_HIGH = 17, /* この移動量以上は速い扱い */
+    LINEA_SET_SCROLL_TICK_ON = 18,  /* スクロールを1回 ±1 段ずつ送る: 1 = あり 0 = なし */
+    LINEA_SET_SCROLL_MAX_CARRY = 19, /* 1段ずつ送るときに持ち越す段数 */
+    LINEA_SET_AML_TIMEOUT = 20,     /* オートマウス: これだけ動かさないと抜ける（ms） */
+    LINEA_SET_AML_PRIOR_IDLE = 21,  /* オートマウス: 直前のキー入力からこの時間以内の動きでは入らない（ms） */
+    LINEA_SET_AML_EXCL_LO = 22,     /* オートマウス: 押しても抜けないキー（0〜31番のビット） */
+    LINEA_SET_AML_EXCL_HI = 23,     /* 同じく 32〜63番のビット */
     LINEA_SET_COUNT,
 };
 

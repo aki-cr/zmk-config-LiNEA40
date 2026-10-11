@@ -11,3 +11,7 @@ properties:
     type: int
     default: 3
     description: 持ち越す段数の上限
+  enable-default:
+    type: int
+    default: 1
+    description: 0 なら、LiNEA40 Studio でオンにするまで何もしない（まとめて送る）

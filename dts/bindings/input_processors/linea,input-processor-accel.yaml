@@ -35,3 +35,15 @@ properties:
     description: |
       1 にすると、LiNEA40 Studio から Bluetooth で変えた「カーソルの速さ」の倍率を掛ける（linea_settings）。
       ビルドせずに速さを変えるため。0 なら掛けない
+  precision-layer:
+    type: int
+    default: -1
+    description: このレイヤーがいちばん上のとき、移動量を 1/precision-divisor にする（精密モード）。-1 なら使わない
+  precision-divisor:
+    type: int
+    default: 1
+    description: 精密モードの割合（LiNEA40 Studio から変えた値があればそちら）
+  enable-default:
+    type: int
+    default: 1
+    description: 0 なら、LiNEA40 Studio でオンにするまで倍率を掛けない（settings-slot 3 のスクロールの加速）

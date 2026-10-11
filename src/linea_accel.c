@@ -12,6 +12,8 @@
 #include <zephyr/sys/util.h>
 #include <drivers/input_processor.h>
 
+#include <zmk/keymap.h>
+
 #include "linea_settings.h"
 
 struct accel_config {
@@ -20,7 +22,10 @@ struct accel_config {
     int32_t speed_low;
     int32_t speed_high;
     int32_t min_interval;
-    int32_t settings_slot; /* LiNEA40 Studio から変えた値を使う: 1 = カーソル（速さ・加速）, 2 = スクロールの速さ */
+    int32_t settings_slot; /* LiNEA40 Studio から変えた値を使う: 1 = カーソル（速さ・加速・精密モード）, 2 = スクロールの速さ, 3 = スクロールの加速 */
+    int32_t precision_layer;   /* このレイヤーがいちばん上のときは 1/precision_divisor にする（-1 = 使わない） */
+    int32_t precision_divisor;
+    int32_t enable_default;    /* 0 なら、LiNEA40 Studio でオンにするまで何もしない（スクロールの加速） */
 };
 
 struct accel_data {
@@ -39,6 +44,11 @@ static int32_t factor_for(const struct accel_config *cfg, int32_t speed) {
         max = linea_setting_get(LINEA_SET_CURSOR_ACCEL_MAX, max);
         low = linea_setting_get(LINEA_SET_CURSOR_SPEED_LOW, low);
         high = linea_setting_get(LINEA_SET_CURSOR_SPEED_HIGH, high);
+    } else if (cfg->settings_slot == 3) {
+        min = linea_setting_get(LINEA_SET_SCROLL_ACCEL_MIN, min);
+        max = linea_setting_get(LINEA_SET_SCROLL_ACCEL_MAX, max);
+        low = linea_setting_get(LINEA_SET_SCROLL_SPEED_LOW, low);
+        high = linea_setting_get(LINEA_SET_SCROLL_SPEED_HIGH, high);
     }
     if (speed <= low) {
         return min;
@@ -55,6 +65,10 @@ static int accel_handle_event(const struct device *dev, struct input_event *even
     struct accel_data *data = dev->data;
 
     if (event->type != INPUT_EV_REL || (event->code != INPUT_REL_X && event->code != INPUT_REL_Y)) {
+        return ZMK_INPUT_PROC_CONTINUE;
+    }
+    /* スクロールの加速はオン/オフを LiNEA40 Studio から切り替える。オフなら何もしない */
+    if (cfg->settings_slot == 3 && !linea_setting_get(LINEA_SET_SCROLL_ACCEL_ON, cfg->enable_default)) {
         return ZMK_INPUT_PROC_CONTINUE;
     }
 
@@ -79,6 +93,11 @@ static int accel_handle_event(const struct device *dev, struct input_event *even
     /* LiNEA40 Studio から変えた速さ（CPI を変えたのと同じ）。ビルドせずにすぐ反映する */
     if (cfg->settings_slot == 1) {
         factor = (int32_t)((int64_t)factor * linea_setting_get(LINEA_SET_CURSOR_SPEED, 1000) / 1000);
+        /* 精密モード: ドライバーの snipe と同じく、いちばん上のレイヤーが Precision のとき */
+        if (cfg->precision_layer >= 0 && zmk_keymap_highest_layer_active() == cfg->precision_layer) {
+            int32_t div = linea_setting_get(LINEA_SET_PRECISION_DIVISOR, cfg->precision_divisor);
+            factor /= MAX(div, 1);
+        }
     } else if (cfg->settings_slot == 2) {
         factor = (int32_t)((int64_t)factor * linea_setting_get(LINEA_SET_SCROLL_SPEED, 1000) / 1000);
     }
@@ -120,6 +139,9 @@ static struct zmk_input_processor_driver_api accel_driver_api = {
         .speed_high = DT_INST_PROP(n, speed_high),                                                 \
         .min_interval = DT_INST_PROP(n, min_interval_ms),                                          \
         .settings_slot = DT_INST_PROP(n, settings_slot),                                           \
+        .precision_layer = DT_INST_PROP(n, precision_layer),                                       \
+        .precision_divisor = DT_INST_PROP(n, precision_divisor),                                   \
+        .enable_default = DT_INST_PROP(n, enable_default),                                         \
     };                                                                                             \
     static struct accel_data accel_data_##n;                                                       \
     DEVICE_DT_INST_DEFINE(n, NULL, NULL, &accel_data_##n, &accel_config_##n, POST_KERNEL,          \

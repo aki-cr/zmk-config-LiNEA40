@@ -1,0 +1,26 @@
+description: |
+  LiNEA40 用のオートマウス。ZMK の zmk,input-processor-temp-layer（zip_temp_layer）と同じ動きで、
+  抜けるまでの時間・直前のキー入力の待ち・抜けないキーを LiNEA40 Studio からすぐ変えられる（linea_settings）。
+  ここに書いた値は、LiNEA40 Studio で変えていないときの値。
+
+compatible: "linea,input-processor-aml"
+
+include: ip_zero_param.yaml
+
+properties:
+  layer:
+    type: int
+    required: true
+    description: ボールを動かすと入るレイヤー
+  timeout-ms:
+    type: int
+    default: 60000
+    description: これだけ動かさないと抜ける
+  require-prior-idle-ms:
+    type: int
+    default: 0
+    description: 直前のキー入力からこの時間以内の動きでは入らない
+  excluded-positions:
+    type: array
+    default: []
+    description: 押しても抜けないキー
