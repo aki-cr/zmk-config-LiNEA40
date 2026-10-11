@@ -80,7 +80,7 @@ static void tele_thread(void *a, void *b, void *c) {
         bt_gatt_notify(NULL, &linea_telemetry_svc.attrs[2], f.data, f.len);
     }
 }
-K_THREAD_DEFINE(linea_tele_tid, 1024, tele_thread, NULL, NULL, NULL, K_LOWEST_APPLICATION_THREAD_PRIO, 0,
+K_THREAD_DEFINE(linea_tele_tid, 2048, tele_thread, NULL, NULL, NULL, K_LOWEST_APPLICATION_THREAD_PRIO, 0,
                 0);
 
 static int telemetry_listener(const zmk_event_t *eh) {

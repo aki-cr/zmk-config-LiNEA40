@@ -29,9 +29,17 @@ struct gesture_data {
     int32_t ax, ay;
     int64_t last_time;
     bool fired;
+    /* キーの動作は入力の処理（スタックが小さい）の中では呼ばず、ワークで呼ぶ */
+    struct k_work work;
+    const struct device *dev;
+    int dir;
+    uint8_t listener_index;
 };
 
-static void fire(const struct gesture_config *cfg, struct zmk_input_processor_state *state, int dir) {
+static void fire_work(struct k_work *work) {
+    struct gesture_data *data = CONTAINER_OF(work, struct gesture_data, work);
+    const struct gesture_config *cfg = data->dev->config;
+    int dir = data->dir;
 /* キーの動作を実行できるのはキーマップを持つ側（右手 = セントラル）だけ。左手のビルドでは何もしない */
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT)
     zmk_keymap_layer_id_t id = zmk_keymap_layer_index_to_id(cfg->layer);
@@ -40,8 +48,7 @@ static void fire(const struct gesture_config *cfg, struct zmk_input_processor_st
         return;
     }
     struct zmk_behavior_binding_event ev = {
-        .position = ZMK_VIRTUAL_KEY_POSITION_BEHAVIOR_INPUT_PROCESSOR(state ? state->input_device_index : 0,
-                                                                      cfg->index),
+        .position = ZMK_VIRTUAL_KEY_POSITION_BEHAVIOR_INPUT_PROCESSOR(data->listener_index, cfg->index),
         .timestamp = k_uptime_get(),
 #if IS_ENABLED(CONFIG_ZMK_SPLIT)
         .source = ZMK_POSITION_STATE_CHANGE_SOURCE_LOCAL,
@@ -77,7 +84,9 @@ static int gesture_handle_event(const struct device *dev, struct input_event *ev
         }
         if (abs(data->ax) >= cfg->threshold || abs(data->ay) >= cfg->threshold) {
             int dir = abs(data->ay) >= abs(data->ax) ? (data->ay < 0 ? 0 : 1) : (data->ax < 0 ? 2 : 3);
-            fire(cfg, state, dir);
+            data->dir = dir;
+            data->listener_index = state ? state->input_device_index : 0;
+            k_work_submit(&data->work);
             data->fired = true;
             data->ax = data->ay = 0;
         }
@@ -93,6 +102,13 @@ static struct zmk_input_processor_driver_api gesture_driver_api = {
     .handle_event = gesture_handle_event,
 };
 
+static int gesture_init(const struct device *dev) {
+    struct gesture_data *data = dev->data;
+    data->dev = dev;
+    k_work_init(&data->work, fire_work);
+    return 0;
+}
+
 #define GESTURE_INST(n)                                                                            \
     static const struct gesture_config gesture_config_##n = {                                      \
         .index = 8 + n,                                                                            \
@@ -103,7 +119,7 @@ static struct zmk_input_processor_driver_api gesture_driver_api = {
         .idle_ms = DT_INST_PROP(n, idle_ms),                                                       \
     };                                                                                             \
     static struct gesture_data gesture_data_##n;                                                   \
-    DEVICE_DT_INST_DEFINE(n, NULL, NULL, &gesture_data_##n, &gesture_config_##n, POST_KERNEL,      \
+    DEVICE_DT_INST_DEFINE(n, gesture_init, NULL, &gesture_data_##n, &gesture_config_##n, POST_KERNEL,      \
                           CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, &gesture_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(GESTURE_INST)
