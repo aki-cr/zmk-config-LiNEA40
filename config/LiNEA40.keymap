@@ -49,6 +49,8 @@
             max-factor-milli = <1600>;
             speed-low = <4>;
             speed-high = <19>;
+            // LiNEA40 Studio から変えた「カーソルの速さ」を掛ける（ビルドせずにすぐ反映。linea_settings）
+            settings-slot = <1>;
         };
 
         // トラボでのスクロールの細かさ: ゆっくり転がしたときだけ細かく（2倍）、速く弾いたときは等倍。

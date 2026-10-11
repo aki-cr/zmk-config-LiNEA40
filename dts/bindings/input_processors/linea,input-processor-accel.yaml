@@ -29,3 +29,9 @@ properties:
     description: |
       0 より大きいと、移動量をためてこの間隔より短くは送らない（間の報告は 0 にする）。
       スクロールを Conductor と同じ約15ms おきの信号にして、Mac Mouse Fix の加速が効くようにするため
+  settings-slot:
+    type: int
+    default: 0
+    description: |
+      1 にすると、LiNEA40 Studio から Bluetooth で変えた「カーソルの速さ」の倍率を掛ける（linea_settings）。
+      ビルドせずに速さを変えるため。0 なら掛けない

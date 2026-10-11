@@ -12,12 +12,15 @@
 #include <zephyr/sys/util.h>
 #include <drivers/input_processor.h>
 
+#include "linea_settings.h"
+
 struct accel_config {
     int32_t min_milli;
     int32_t max_milli;
     int32_t speed_low;
     int32_t speed_high;
     int32_t min_interval;
+    int32_t settings_slot; /* 1 = カーソル（LiNEA40 Studio から変えた速さの倍率を掛ける） */
 };
 
 struct accel_data {
@@ -66,6 +69,10 @@ static int accel_handle_event(const struct device *dev, struct input_event *even
     /* 斜めの速さのおおよそ（大きい方 + 小さい方の半分） */
     int32_t hi = MAX(data->last_x, data->last_y), lo = MIN(data->last_x, data->last_y);
     int32_t factor = factor_for(cfg, hi + lo / 2);
+    /* LiNEA40 Studio から変えた速さ（CPI を変えたのと同じ）。ビルドせずにすぐ反映する */
+    if (cfg->settings_slot == 1) {
+        factor = (int32_t)((int64_t)factor * linea_setting_get(LINEA_SET_CURSOR_SPEED, 1000) / 1000);
+    }
 
     int32_t *rem = event->code == INPUT_REL_X ? &data->rem_x : &data->rem_y;
     int32_t scaled = v * factor + *rem;
@@ -103,6 +110,7 @@ static struct zmk_input_processor_driver_api accel_driver_api = {
         .speed_low = DT_INST_PROP(n, speed_low),                                                   \
         .speed_high = DT_INST_PROP(n, speed_high),                                                 \
         .min_interval = DT_INST_PROP(n, min_interval_ms),                                          \
+        .settings_slot = DT_INST_PROP(n, settings_slot),                                           \
     };                                                                                             \
     static struct accel_data accel_data_##n;                                                       \
     DEVICE_DT_INST_DEFINE(n, NULL, NULL, &accel_data_##n, &accel_config_##n, POST_KERNEL,          \
