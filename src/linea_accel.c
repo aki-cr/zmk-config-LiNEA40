@@ -17,12 +17,15 @@ struct accel_config {
     int32_t max_milli;
     int32_t speed_low;
     int32_t speed_high;
+    int32_t min_interval;
 };
 
 struct accel_data {
     int32_t rem_x, rem_y;   /* 持ち越した端数（1/1000 単位） */
     int32_t last_x, last_y; /* 直前の各軸の移動量（速さの見積もり用） */
     int64_t last_time;
+    int32_t pend_x, pend_y;    /* 間隔待ちでためている移動量 */
+    int64_t sent_x, sent_y;    /* 最後に送った時刻 */
 };
 
 static int32_t factor_for(const struct accel_config *cfg, int32_t speed) {
@@ -50,6 +53,7 @@ static int accel_handle_event(const struct device *dev, struct input_event *even
     if (now - data->last_time > 100) {
         data->rem_x = data->rem_y = 0;
         data->last_x = data->last_y = 0;
+        data->pend_x = data->pend_y = 0;
     }
     data->last_time = now;
 
@@ -67,6 +71,22 @@ static int accel_handle_event(const struct device *dev, struct input_event *even
     int32_t scaled = v * factor + *rem;
     int32_t out = scaled / 1000;
     *rem = scaled - out * 1000;
+
+    /* 間隔を空けて送る: 前に送ってから min_interval 経つまではためておく */
+    if (cfg->min_interval > 0) {
+        int32_t *pend = event->code == INPUT_REL_X ? &data->pend_x : &data->pend_y;
+        int64_t *sent = event->code == INPUT_REL_X ? &data->sent_x : &data->sent_y;
+        *pend += out;
+        if (now - *sent < cfg->min_interval) {
+            out = 0;
+        } else {
+            out = *pend;
+            *pend = 0;
+            if (out != 0) {
+                *sent = now;
+            }
+        }
+    }
     event->value = out;
 
     return ZMK_INPUT_PROC_CONTINUE;
@@ -82,6 +102,7 @@ static struct zmk_input_processor_driver_api accel_driver_api = {
         .max_milli = DT_INST_PROP(n, max_factor_milli),                                            \
         .speed_low = DT_INST_PROP(n, speed_low),                                                   \
         .speed_high = DT_INST_PROP(n, speed_high),                                                 \
+        .min_interval = DT_INST_PROP(n, min_interval_ms),                                          \
     };                                                                                             \
     static struct accel_data accel_data_##n;                                                       \
     DEVICE_DT_INST_DEFINE(n, NULL, NULL, &accel_data_##n, &accel_config_##n, POST_KERNEL,          \

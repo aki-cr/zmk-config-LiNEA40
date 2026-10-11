@@ -23,3 +23,9 @@ properties:
     type: int
     default: 20
     description: この移動量以上は max-factor-milli（間はなめらかにつなぐ）
+  min-interval-ms:
+    type: int
+    default: 0
+    description: |
+      0 より大きいと、移動量をためてこの間隔より短くは送らない（間の報告は 0 にする）。
+      スクロールを Conductor と同じ約15ms おきの信号にして、Mac Mouse Fix の加速が効くようにするため

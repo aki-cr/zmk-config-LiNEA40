@@ -60,6 +60,8 @@
             max-factor-milli = <1000>;
             speed-low = <2>;
             speed-high = <10>;
+            // Conductor と同じく約15ms おきにまとめて送る（8ms おきだと Mac Mouse Fix の連続スクロールの加速が効かず、途中で詰まる）
+            min-interval-ms = <15>;
         };
 
         // Gesture: Gesture レイヤーでトラボを上下左右に転がすと、そのレイヤーの I / , / J / L に置いたキーを1回押す
