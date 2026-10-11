@@ -62,6 +62,13 @@
             speed-high = <14>;
         };
 
+        // トラボのスクロールを、エンコーダーと同じ「1回 ±1 段」の信号にそろえる（Mac Mouse Fix がエンコーダーと同じ自然な減速をかけるように）
+        linea_scroll_tick: linea_scroll_tick {
+            compatible = "linea,input-processor-tick";
+            #input-processor-cells = <0>;
+            max-carry = <3>;
+        };
+
         // Gesture: Gesture レイヤーでトラボを上下左右に転がすと、そのレイヤーの I / , / J / L に置いたキーを1回押す
         linea_gesture: linea_gesture {
             compatible = "linea,input-processor-gesture";
@@ -116,11 +123,10 @@
         input-processors =
             <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>,
             <&zip_xy_to_scroll_mapper>,
-            <&zip_scroll_scaler 1 5>;
-        // linea_accel_scroll（ゆっくりだけ細かく）と 15ms おきの送信は試したが、Mac Mouse Fix の加速と噛み合わず不安定になったので使わない。
-        // Conductor の信号（1〜2行ずつ・弾いて計15〜20行）にいちばん近いのは、この 1/20 だけの状態
-        // 動いた量に一定の割合（1/20）でスクロールする。Conductor は1回弾くと 1〜2 行ずつ計 15〜20 行ほど送るので、それに合わせた。
-        // 1/5 だと1回に最大10行・計100行近くを送り、Mac Mouse Fix の慣性が途中で途切れて急に止まっていた
+            <&zip_scroll_scaler 1 10>,
+            <&linea_scroll_tick>;
+        // 動いた量の 1/10 を段数にし、linea_scroll_tick で1回 ±1 段にそろえる（エンコーダーと同じ形）。
+        // 1回に何段もまとめて送ると、Mac Mouse Fix の慣性が途切れたり急に止まったりした。ゆっくり2倍・15ms おき送信も不安定だった
     };
 };
 

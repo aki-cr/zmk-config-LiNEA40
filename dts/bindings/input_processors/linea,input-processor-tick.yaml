@@ -1,0 +1,13 @@
+description: |
+  LiNEA40 用のスクロールの刻み。ホイールの信号を1回あたり ±1 段にそろえ（エンコーダーと同じ形）、
+  あふれた分は max-carry 段まで持ち越して次の報告で送る。
+
+compatible: "linea,input-processor-tick"
+
+include: ip_zero_param.yaml
+
+properties:
+  max-carry:
+    type: int
+    default: 3
+    description: 持ち越す段数の上限
