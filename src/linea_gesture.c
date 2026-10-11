@@ -32,6 +32,8 @@ struct gesture_data {
 };
 
 static void fire(const struct gesture_config *cfg, struct zmk_input_processor_state *state, int dir) {
+/* キーの動作を実行できるのはキーマップを持つ側（右手 = セントラル）だけ。左手のビルドでは何もしない */
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT)
     zmk_keymap_layer_id_t id = zmk_keymap_layer_index_to_id(cfg->layer);
     const struct zmk_behavior_binding *b = zmk_keymap_get_layer_binding_at_idx(id, cfg->positions[dir]);
     if (b == NULL || b->behavior_dev == NULL) {
@@ -48,6 +50,7 @@ static void fire(const struct gesture_config *cfg, struct zmk_input_processor_st
     /* 押して、少し待って離す（キューで順番に実行される） */
     zmk_behavior_queue_add(&ev, *b, true, 30);
     zmk_behavior_queue_add(&ev, *b, false, 0);
+#endif
 }
 
 static int gesture_handle_event(const struct device *dev, struct input_event *event, uint32_t param1,
