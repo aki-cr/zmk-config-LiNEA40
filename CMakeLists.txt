@@ -18,5 +18,6 @@ endif()
 # 並びは ZMK と同じ: オートマウス（zip_temp_layer の位置）→ 長押しの判定 →（ZMK の combo・keymap）
 # （別の束に入れたら keymap より後になり、長押しがほかのキーで決まらず、判定時間を待つようになった）
 if((NOT CONFIG_ZMK_SPLIT) OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
-  target_sources(app PRIVATE src/linea_aml.c src/linea_hold_tap.c)
+  # コンボも ZMK と同じく hold-tap の後・keymap の前（ZMK の combo.c はキーマップに zmk,combos が無いので空になる）
+  target_sources(app PRIVATE src/linea_aml.c src/linea_hold_tap.c src/linea_combo.c)
 endif()

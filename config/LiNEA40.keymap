@@ -159,8 +159,10 @@
 };
 
 / {
+    // コンボは LiNEA40 Studio からすぐ書き換えられる LiNEA40 用の部品（src/linea_combo.c。見分け方は ZMK と同じ）で動かす。
+    // ここに書いたコンボは、LiNEA40 Studio で変えていないときの値
     combos {
-        compatible = "zmk,combos";
+        compatible = "linea,combos";
 
         L5_0 {
             bindings = <&mo 5>;
