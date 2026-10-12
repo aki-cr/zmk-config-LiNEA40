@@ -31,6 +31,7 @@ struct gesture_data {
     int32_t ax, ay;
     int64_t last_time;
     bool fired;
+    int64_t fire_time; /* 最後に発動した時刻 */
     /* キーの動作は入力の処理（スタックが小さい）の中では呼ばず、ワークで呼ぶ */
     struct k_work work;
     const struct device *dev;
@@ -82,28 +83,37 @@ static int gesture_handle_event(const struct device *dev, struct input_event *ev
     }
     data->last_time = now;
 
-    if (!data->fired) {
-        if (event->code == INPUT_REL_X) {
-            data->ax += event->value;
-        } else {
-            data->ay += event->value;
-        }
-        /* 縦か横のどちらかが、もう一方の 1.5倍以上動いたときだけ決める。斜めで決めきれないときは、
-         * もう少し転がしてどちらかに寄るまで待つ（以前は少しでも多い方にしていて、斜めだと違う向きになった） */
-        int32_t ax = abs(data->ax), ay = abs(data->ay);
-        bool decided = (ax >= threshold || ay >= threshold) && (ay * 2 >= ax * 3 || ax * 2 >= ay * 3);
-        if (!decided && (ax >= threshold * 4 || ay >= threshold * 4)) {
-            /* ずっと斜めのまま: 一度捨てて、はじめから数え直す */
+    if (event->code == INPUT_REL_X) {
+        data->ax += event->value;
+    } else {
+        data->ay += event->value;
+    }
+    int32_t half = threshold / 2;
+    if (data->fired) {
+        /*
+         * 発動のあと、止まらなくても次を受け付ける（Conductor のように左右に続けてスワイプできるように）:
+         *   - 発動した向きと逆に threshold の半分転がしたら、すぐ次を受け付ける（右→左→右）
+         *   - 同じ向きに転がし続けているときは、0.4秒たったら次を受け付ける（右・右・右）
+         * （以前はボールが idle-ms 止まるまで次を受け付けず、左右に続けて振ると 2回目以降が出なかった）
+         */
+        bool reversed = (data->dir == 0 && data->ay > half) || (data->dir == 1 && data->ay < -half) ||
+                        (data->dir == 2 && data->ax > half) || (data->dir == 3 && data->ax < -half);
+        if (reversed) {
+            data->fired = false; /* 逆向きに転がした分はそのまま数える */
+        } else if (now - data->fire_time > 400) {
+            data->fired = false;
             data->ax = data->ay = 0;
         }
-        if (decided) {
-            int dir = ay >= ax ? (data->ay < 0 ? 0 : 1) : (data->ax < 0 ? 2 : 3);
-            data->dir = dir;
-            data->listener_index = state ? state->input_device_index : 0;
-            k_work_submit(&data->work);
-            data->fired = true;
-            data->ax = data->ay = 0;
-        }
+    }
+    if (!data->fired && (abs(data->ax) >= threshold || abs(data->ay) >= threshold)) {
+        /* 向きは多く動いた方（縦横の差を待つ斜めの処理は、反応が悪くなったのでやめた） */
+        int dir = abs(data->ay) >= abs(data->ax) ? (data->ay < 0 ? 0 : 1) : (data->ax < 0 ? 2 : 3);
+        data->dir = dir;
+        data->listener_index = state ? state->input_device_index : 0;
+        k_work_submit(&data->work);
+        data->fired = true;
+        data->fire_time = now;
+        data->ax = data->ay = 0;
     }
 
     /* Gesture 中はカーソルを動かさない。ZMK v0.2.1 はレイヤー別の設定の中で STOP を返しても無視して
