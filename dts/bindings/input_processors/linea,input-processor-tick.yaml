@@ -25,3 +25,7 @@ properties:
     type: int
     default: 12
     description: すき間を埋めるときに貯める段の上限（指を離したあと流れ続けすぎないように）。LiNEA40 Studio から変えられる（設定 25）
+  horizontal-default:
+    type: int
+    default: 1
+    description: 0 なら横スクロールを使わない（縦だけ）。LiNEA40 Studio から変えられる（設定 26）

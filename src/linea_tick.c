@@ -36,6 +36,7 @@ struct tick_config {
     int32_t max_carry;
     int32_t enable_default; /* 0 なら、LiNEA40 Studio でオンにするまで何もしない */
     int32_t pace_default;   /* すき間を埋めるか（LiNEA40 Studio で変えていないとき） */
+    int32_t horizontal_default; /* 横スクロールを使うか（LiNEA40 Studio で変えていないとき） */
     int32_t pace_buffer;    /* 貯める段の上限 */
 };
 
@@ -44,6 +45,7 @@ struct tick_data {
     int32_t mag_v, mag_h;     /* 最近動いた量（縦・横）。どちらの向きを送るかを決める */
     int32_t lock;             /* 送る向き: 0=まだ決めていない 1=縦 2=横 */
     int64_t last_time;
+    int64_t lock_last;        /* 今の向きに最後に段が出た時刻 */
     /* すき間を埋める */
     const struct device *dev;
     struct k_work_delayable pace_work;
@@ -113,18 +115,33 @@ static int tick_handle_event(const struct device *dev, struct input_event *event
     if (now - data->last_time > 100) {
         data->carry_v = data->carry_h = 0;
         data->mag_v = data->mag_h = 0;
+    }
+    /* 向きは、スクロールをやめて 1秒たつまで覚えておく（転がし直しの 0.2〜0.6秒のすき間で決め直さない）。
+     * 以前は 0.1秒止まるたびに決め直していて、斜めに入ったタイミングで横に決まり、縦が止まっていた */
+    if (now - data->last_time > 1000) {
         data->lock = 0;
     }
     data->last_time = now;
 
-    /* 縦か横のどちらを送るか決める: 最初に動いた向き。ただし反対の向きが3倍以上動いたら乗り換える */
+    /* 縦か横のどちらを送るか決める */
     int32_t axis = event->code == INPUT_REL_WHEEL ? 1 : 2;
+    bool horizontal_on = linea_setting_get(LINEA_SET_SCROLL_HORIZONTAL, cfg->horizontal_default);
+    if (axis == 2 && !horizontal_on) {
+        /* 横スクロールなし: 横は捨てる（斜めに転がしても縦だけ流れる） */
+        event->value = 0;
+        return ZMK_INPUT_PROC_CONTINUE;
+    }
     int32_t *mag = axis == 1 ? &data->mag_v : &data->mag_h;
     int32_t *other = axis == 1 ? &data->mag_h : &data->mag_v;
     *mag = *mag * 7 / 8 + abs(event->value) * 8; /* 8倍して端数を残しつつ、古い分は少しずつ減らす */
     if (data->lock == 0 && event->value != 0) {
-        data->lock = axis;
-    } else if (data->lock != axis && data->lock != 0 && *mag > *other * 3 + 16) {
+        /* 縦はすぐ決める。横ははっきり横に転がしたとき（縦の3倍以上）だけ */
+        if (axis == 1 || *mag > *other * 3 + 16) {
+            data->lock = axis;
+        }
+    } else if (data->lock != axis && data->lock != 0 && now - data->lock_last > 300 &&
+               *mag > *other * 3 + 16) {
+        /* 乗り換えは、今の向きの段が 0.3秒以上出ていないときだけ（転がしている途中では乗り換えない） */
         /* 乗り換え: この報告ではまだ送らない（同じ報告で前の向きを送っているかもしれないので、縦横が重ならないように） */
         data->lock = axis;
         data->carry_v = data->carry_h = 0;
@@ -133,6 +150,9 @@ static int tick_handle_event(const struct device *dev, struct input_event *event
     }
 
     int32_t *carry = axis == 1 ? &data->carry_v : &data->carry_h;
+    if (data->lock == axis && event->value != 0) {
+        data->lock_last = now;
+    }
     if (data->lock != axis) {
         /* 送らない向き: 捨てる */
         *carry = 0;
@@ -195,6 +215,7 @@ static int tick_init(const struct device *dev) {
         .enable_default = DT_INST_PROP(n, enable_default),                                         \
         .pace_default = DT_INST_PROP(n, pace_default),                                             \
         .pace_buffer = DT_INST_PROP(n, pace_buffer),                                               \
+        .horizontal_default = DT_INST_PROP(n, horizontal_default),                                 \
     };                                                                                             \
     static struct tick_data tick_data_##n;                                                         \
     DEVICE_DT_INST_DEFINE(n, tick_init, NULL, &tick_data_##n, &tick_config_##n, POST_KERNEL,            \

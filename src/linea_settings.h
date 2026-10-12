@@ -33,6 +33,7 @@ enum linea_setting_id {
     LINEA_SET_AML_EXCL_HI = 23,     /* 同じく 32〜63番のビット */
     LINEA_SET_SCROLL_PACE = 24,     /* スクロールのすき間を埋める（貯めた段を平均の間隔で送り出す）: 1 = あり 0 = なし */
     LINEA_SET_SCROLL_PACE_BUFFER = 25, /* すき間を埋めるときに貯める段の上限 */
+    LINEA_SET_SCROLL_HORIZONTAL = 26, /* トラボの横スクロール: 1 = あり 0 = なし（縦だけ） */
     LINEA_SET_COUNT,
 };
 

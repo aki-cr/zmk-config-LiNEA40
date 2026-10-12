@@ -53,6 +53,7 @@ static bool in_range(uint8_t id, int32_t v) {
     case LINEA_SET_SCROLL_ACCEL_ON:
     case LINEA_SET_SCROLL_TICK_ON:
     case LINEA_SET_SCROLL_PACE:
+    case LINEA_SET_SCROLL_HORIZONTAL:
         return v == 0 || v == 1;
     case LINEA_SET_SCROLL_ACCEL_MIN:
     case LINEA_SET_SCROLL_ACCEL_MAX:

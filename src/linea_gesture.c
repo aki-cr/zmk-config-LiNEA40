@@ -88,8 +88,16 @@ static int gesture_handle_event(const struct device *dev, struct input_event *ev
         } else {
             data->ay += event->value;
         }
-        if (abs(data->ax) >= threshold || abs(data->ay) >= threshold) {
-            int dir = abs(data->ay) >= abs(data->ax) ? (data->ay < 0 ? 0 : 1) : (data->ax < 0 ? 2 : 3);
+        /* 縦か横のどちらかが、もう一方の 1.5倍以上動いたときだけ決める。斜めで決めきれないときは、
+         * もう少し転がしてどちらかに寄るまで待つ（以前は少しでも多い方にしていて、斜めだと違う向きになった） */
+        int32_t ax = abs(data->ax), ay = abs(data->ay);
+        bool decided = (ax >= threshold || ay >= threshold) && (ay * 2 >= ax * 3 || ax * 2 >= ay * 3);
+        if (!decided && (ax >= threshold * 4 || ay >= threshold * 4)) {
+            /* ずっと斜めのまま: 一度捨てて、はじめから数え直す */
+            data->ax = data->ay = 0;
+        }
+        if (decided) {
+            int dir = ay >= ax ? (data->ay < 0 ? 0 : 1) : (data->ax < 0 ? 2 : 3);
             data->dir = dir;
             data->listener_index = state ? state->input_device_index : 0;
             k_work_submit(&data->work);
