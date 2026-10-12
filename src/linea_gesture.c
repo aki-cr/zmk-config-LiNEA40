@@ -88,19 +88,19 @@ static int gesture_handle_event(const struct device *dev, struct input_event *ev
     } else {
         data->ay += event->value;
     }
-    int32_t half = threshold / 2;
+    int32_t back = threshold / 4; /* 逆向きに振り返したと見なす量（キビキビ反応するよう小さめ） */
     if (data->fired) {
         /*
          * 発動のあと、止まらなくても次を受け付ける（Conductor のように左右に続けてスワイプできるように）:
-         *   - 発動した向きと逆に threshold の半分転がしたら、すぐ次を受け付ける（右→左→右）
-         *   - 同じ向きに転がし続けているときは、0.4秒たったら次を受け付ける（右・右・右）
+         *   - 発動した向きと逆に threshold の 1/4 転がしたら、すぐ次を受け付ける（右→左→右）
+         *   - 同じ向きに転がし続けているときは、0.25秒たったら次を受け付ける（右・右・右）
          * （以前はボールが idle-ms 止まるまで次を受け付けず、左右に続けて振ると 2回目以降が出なかった）
          */
-        bool reversed = (data->dir == 0 && data->ay > half) || (data->dir == 1 && data->ay < -half) ||
-                        (data->dir == 2 && data->ax > half) || (data->dir == 3 && data->ax < -half);
+        bool reversed = (data->dir == 0 && data->ay > back) || (data->dir == 1 && data->ay < -back) ||
+                        (data->dir == 2 && data->ax > back) || (data->dir == 3 && data->ax < -back);
         if (reversed) {
             data->fired = false; /* 逆向きに転がした分はそのまま数える */
-        } else if (now - data->fire_time > 400) {
+        } else if (now - data->fire_time > 250) {
             data->fired = false;
             data->ax = data->ay = 0;
         }

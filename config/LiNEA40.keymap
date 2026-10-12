@@ -114,7 +114,7 @@
             down = <27>;
             left = <16>;
             right = <18>;
-            threshold = <40>;
+            threshold = <30>;
             idle-ms = <250>;
         };
 
