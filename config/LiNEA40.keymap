@@ -176,12 +176,6 @@
             timeout-ms = <50>;
         };
 
-        BT_5_1 {
-            bindings = <&bt BT_SEL 5>;
-            key-positions = <0 10 20>;
-            timeout-ms = <50>;
-        };
-
         Boot_2 {
             bindings = <&bootloader>;
             key-positions = <8 24 4>;
