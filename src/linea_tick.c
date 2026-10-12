@@ -45,7 +45,7 @@ struct tick_data {
     int32_t mag_v, mag_h;     /* 最近動いた量（縦・横）。どちらの向きを送るかを決める */
     int32_t lock;             /* 送る向き: 0=まだ決めていない 1=縦 2=横 */
     int64_t last_time;
-    int64_t lock_last;        /* 今の向きに最後に段が出た時刻 */
+    int32_t acc_v, acc_h;     /* 向きを決めるまでの、縦・横の段の合計 */
     /* すき間を埋める */
     const struct device *dev;
     struct k_work_delayable pace_work;
@@ -116,14 +116,19 @@ static int tick_handle_event(const struct device *dev, struct input_event *event
         data->carry_v = data->carry_h = 0;
         data->mag_v = data->mag_h = 0;
     }
-    /* 向きは、スクロールをやめて 1秒たつまで覚えておく（転がし直しの 0.2〜0.6秒のすき間で決め直さない）。
-     * 以前は 0.1秒止まるたびに決め直していて、斜めに入ったタイミングで横に決まり、縦が止まっていた */
-    if (now - data->last_time > 1000) {
+    /*
+     * 縦か横のどちらを送るか（同時には送らない。Mac Mouse Fix は縦横同時のスクロールをなめらかにしないため）:
+     *   - 転がし始めは少し様子を見て、縦か横が 2段以上かつもう一方の 2倍以上になったら決める
+     *     （わずかな斜めでは決めない。ずっと決まらないときは 6段で多い方にする）。決めるまでは送らない
+     *   - 決めた向きは、スクロールが 0.35秒止まるまで変えない（転がしている途中では乗り換えない）
+     * （2026-10-13: 0.1秒ごとに決め直すと斜めで横になり縦が止まった。1秒覚えて縦をすぐ決めると、横にしたいのに縦になった）
+     */
+    if (now - data->last_time > 350) {
         data->lock = 0;
+        data->acc_v = data->acc_h = 0;
     }
     data->last_time = now;
 
-    /* 縦か横のどちらを送るか決める */
     int32_t axis = event->code == INPUT_REL_WHEEL ? 1 : 2;
     bool horizontal_on = linea_setting_get(LINEA_SET_SCROLL_HORIZONTAL, cfg->horizontal_default);
     if (axis == 2 && !horizontal_on) {
@@ -131,28 +136,25 @@ static int tick_handle_event(const struct device *dev, struct input_event *event
         event->value = 0;
         return ZMK_INPUT_PROC_CONTINUE;
     }
-    int32_t *mag = axis == 1 ? &data->mag_v : &data->mag_h;
-    int32_t *other = axis == 1 ? &data->mag_h : &data->mag_v;
-    *mag = *mag * 7 / 8 + abs(event->value) * 8; /* 8倍して端数を残しつつ、古い分は少しずつ減らす */
-    if (data->lock == 0 && event->value != 0) {
-        /* 縦はすぐ決める。横ははっきり横に転がしたとき（縦の3倍以上）だけ */
-        if (axis == 1 || *mag > *other * 3 + 16) {
-            data->lock = axis;
+    if (data->lock == 0) {
+        if (axis == 1) {
+            data->acc_v += abs(event->value);
+        } else {
+            data->acc_h += abs(event->value);
         }
-    } else if (data->lock != axis && data->lock != 0 && now - data->lock_last > 300 &&
-               *mag > *other * 3 + 16) {
-        /* 乗り換えは、今の向きの段が 0.3秒以上出ていないときだけ（転がしている途中では乗り換えない） */
-        /* 乗り換え: この報告ではまだ送らない（同じ報告で前の向きを送っているかもしれないので、縦横が重ならないように） */
-        data->lock = axis;
-        data->carry_v = data->carry_h = 0;
-        event->value = 0;
-        return ZMK_INPUT_PROC_CONTINUE;
+        int32_t hi = MAX(data->acc_v, data->acc_h), lo = MIN(data->acc_v, data->acc_h);
+        if (!horizontal_on && data->acc_v > 0) {
+            data->lock = 1; /* 横なしなら縦にすぐ決める */
+        } else if ((hi >= 2 && hi >= lo * 2) || hi >= 6) {
+            data->lock = data->acc_v >= data->acc_h ? 1 : 2;
+        }
+        if (data->lock == 0 || data->lock != axis) {
+            event->value = 0; /* まだ決めていない・決めた向きと違う: 送らない */
+            return ZMK_INPUT_PROC_CONTINUE;
+        }
     }
 
     int32_t *carry = axis == 1 ? &data->carry_v : &data->carry_h;
-    if (data->lock == axis && event->value != 0) {
-        data->lock_last = now;
-    }
     if (data->lock != axis) {
         /* 送らない向き: 捨てる */
         *carry = 0;

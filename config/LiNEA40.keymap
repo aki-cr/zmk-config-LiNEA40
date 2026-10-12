@@ -98,8 +98,8 @@
             #input-processor-cells = <0>;
             max-carry = <3>;
             enable-default = <1>;
-            // 転がし直しのすき間でもスクロールが止まらないように、貯めた段を平均の間隔で送り出す（LiNEA40 Studio で切り替えられる）
-            pace-default = <1>;
+            // 貯めた段を平均の間隔で送り出す処理（すき間を埋める）。詰まりの原因は斜めの向きの切り替えだったので、使わない
+            pace-default = <0>;
             pace-buffer = <18>;
         };
 
