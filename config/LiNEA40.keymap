@@ -230,7 +230,7 @@
             display-name = "base";
             bindings = <
 &mt LGUI Q           &kp W                &kp E                &kp R                &kp T                       &kp Y                &kp U                &kp I                &kp O                &kp P
-&mt LCTRL A          &kp S                &kp D                &kp F                &kp G                       &kp H                &kp J                &kp K                &lt 5 L              &mt RCTRL ENTER
+&mt LCTRL A          &kp S                &kp D                &kp F                &kp G                       &kp H                &kp J                &kp K                &kp L                &mt RCTRL ENTER
 &mt LSHIFT Z         &kp X                &kp C                &kp V                &kp B                       &kp N                &kp M                &kp COMMA            &kp DOT              &mt RSHIFT BSPC
 &mt LSHIFT TAB       &kp LALT             &mt LGUI LANG2       &kp INS              &lt 1 SPACE          &lt 2 BSPC            &lt 2 ENTER          &lt 3 LANG1          &mt LGUI LANG2       &kp C_VOL_DN         &kp C_VOL_UP
             >;
