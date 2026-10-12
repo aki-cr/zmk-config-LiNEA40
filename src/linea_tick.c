@@ -116,51 +116,20 @@ static int tick_handle_event(const struct device *dev, struct input_event *event
         data->carry_v = data->carry_h = 0;
         data->mag_v = data->mag_h = 0;
     }
-    /*
-     * 縦か横のどちらを送るか（同時には送らない。Mac Mouse Fix は縦横同時のスクロールをなめらかにしないため）:
-     *   - 転がし始めは少し様子を見て、縦か横が 2段以上かつもう一方の 2倍以上になったら決める
-     *     （わずかな斜めでは決めない。ずっと決まらないときは 6段で多い方にする）。決めるまでは送らない
-     *   - 決めた向きは、スクロールが 0.35秒止まるまで変えない（転がしている途中では乗り換えない）
-     * （2026-10-13: 0.1秒ごとに決め直すと斜めで横になり縦が止まった。1秒覚えて縦をすぐ決めると、横にしたいのに縦になった）
-     */
-    if (now - data->last_time > 350) {
-        data->lock = 0;
-        data->acc_v = data->acc_h = 0;
-    }
     data->last_time = now;
 
+    /*
+     * 縦と横は選ばず、それぞれそのまま送る（斜めは斜めにスクロールする。2026-10-13 ユーザーの判断で縦横を選ぶ処理をなくした）。
+     * 縦横を選ぶ処理は、転がし直しのすき間で横に切り替わって縦が止まったり、縦のつもりが横になったりした
+     */
     int32_t axis = event->code == INPUT_REL_WHEEL ? 1 : 2;
-    bool horizontal_on = linea_setting_get(LINEA_SET_SCROLL_HORIZONTAL, cfg->horizontal_default);
-    if (axis == 2 && !horizontal_on) {
+    if (axis == 2 && !linea_setting_get(LINEA_SET_SCROLL_HORIZONTAL, cfg->horizontal_default)) {
         /* 横スクロールなし: 横は捨てる（斜めに転がしても縦だけ流れる） */
         event->value = 0;
         return ZMK_INPUT_PROC_CONTINUE;
     }
-    if (data->lock == 0) {
-        if (axis == 1) {
-            data->acc_v += abs(event->value);
-        } else {
-            data->acc_h += abs(event->value);
-        }
-        int32_t hi = MAX(data->acc_v, data->acc_h), lo = MIN(data->acc_v, data->acc_h);
-        if (!horizontal_on && data->acc_v > 0) {
-            data->lock = 1; /* 横なしなら縦にすぐ決める */
-        } else if ((hi >= 2 && hi >= lo * 2) || hi >= 6) {
-            data->lock = data->acc_v >= data->acc_h ? 1 : 2;
-        }
-        if (data->lock == 0 || data->lock != axis) {
-            event->value = 0; /* まだ決めていない・決めた向きと違う: 送らない */
-            return ZMK_INPUT_PROC_CONTINUE;
-        }
-    }
-
     int32_t *carry = axis == 1 ? &data->carry_v : &data->carry_h;
-    if (data->lock != axis) {
-        /* 送らない向き: 捨てる */
-        *carry = 0;
-        event->value = 0;
-        return ZMK_INPUT_PROC_CONTINUE;
-    }
+
     /* すき間を埋める: 段を貯めて、送り出しはこの部品が行う（ここでは送らない） */
     if (linea_setting_get(LINEA_SET_SCROLL_PACE, cfg->pace_default)) {
         int32_t v = event->value;
