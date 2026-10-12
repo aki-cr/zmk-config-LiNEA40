@@ -63,6 +63,8 @@ static bool in_range(uint8_t id, int32_t v) {
         return v >= 1 && v <= 200;
     case LINEA_SET_SCROLL_MAX_CARRY:
         return v >= 0 && v <= 20;
+    case LINEA_SET_SCROLL_PACE_BUFFER:
+        return v >= 2 && v <= 40;
     case LINEA_SET_AML_TIMEOUT:
         return v >= 100 && v <= 600000;
     case LINEA_SET_AML_PRIOR_IDLE:

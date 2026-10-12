@@ -84,7 +84,7 @@ static void pace_work_handler(struct k_work *work) {
     int32_t s = data->queue > 0 ? 1 : -1;
     data->queue -= s;
     uint16_t code = data->q_code;
-    int32_t iv = pace_interval(data, k_uptime_get(), cfg->pace_buffer);
+    int32_t iv = pace_interval(data, k_uptime_get(), linea_setting_get(LINEA_SET_SCROLL_PACE_BUFFER, cfg->pace_buffer));
     data->running = data->queue != 0;
     k_spin_unlock(&data->lock_pace, key);
 
@@ -151,7 +151,8 @@ static int tick_handle_event(const struct device *dev, struct input_event *event
             data->queue = 0; /* 逆向き・向きの乗り換え: 貯めた段は捨てて、すぐ新しい向きへ */
         }
         data->q_code = event->code;
-        data->queue = CLAMP(data->queue + v, -cfg->pace_buffer, cfg->pace_buffer);
+        int32_t cap = linea_setting_get(LINEA_SET_SCROLL_PACE_BUFFER, cfg->pace_buffer);
+        data->queue = CLAMP(data->queue + v, -cap, cap);
         for (int i = 0; i < abs(v) && i < PACE_HIST; i++) {
             data->hist[data->hist_i] = now;
             data->hist_i = (data->hist_i + 1) % PACE_HIST;

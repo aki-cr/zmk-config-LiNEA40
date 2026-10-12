@@ -32,6 +32,7 @@ enum linea_setting_id {
     LINEA_SET_AML_EXCL_LO = 22,     /* オートマウス: 押しても抜けないキー（0〜31番のビット） */
     LINEA_SET_AML_EXCL_HI = 23,     /* 同じく 32〜63番のビット */
     LINEA_SET_SCROLL_PACE = 24,     /* スクロールのすき間を埋める（貯めた段を平均の間隔で送り出す）: 1 = あり 0 = なし */
+    LINEA_SET_SCROLL_PACE_BUFFER = 25, /* すき間を埋めるときに貯める段の上限 */
     LINEA_SET_COUNT,
 };
 

@@ -24,4 +24,4 @@ properties:
   pace-buffer:
     type: int
     default: 12
-    description: すき間を埋めるときに貯める段の上限（指を離したあと流れ続けすぎないように）
+    description: すき間を埋めるときに貯める段の上限（指を離したあと流れ続けすぎないように）。LiNEA40 Studio から変えられる（設定 25）
