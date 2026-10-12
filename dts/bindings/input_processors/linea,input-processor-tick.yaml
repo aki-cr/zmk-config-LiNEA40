@@ -15,3 +15,13 @@ properties:
     type: int
     default: 1
     description: 0 なら、LiNEA40 Studio でオンにするまで何もしない（まとめて送る）
+  pace-default:
+    type: int
+    default: 0
+    description: |
+      1 にすると、届いた段を貯めて平均の間隔で1段ずつ送り出す（転がし直しのすき間でスクロールが止まらないように）。
+      LiNEA40 Studio から切り替えられる。送り出した信号は、この部品を device にした input-listener が Mac に送る
+  pace-buffer:
+    type: int
+    default: 12
+    description: すき間を埋めるときに貯める段の上限（指を離したあと流れ続けすぎないように）

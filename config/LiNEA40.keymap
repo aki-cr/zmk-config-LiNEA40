@@ -98,6 +98,9 @@
             #input-processor-cells = <0>;
             max-carry = <3>;
             enable-default = <1>;
+            // 転がし直しのすき間でもスクロールが止まらないように、貯めた段を平均の間隔で送り出す（LiNEA40 Studio で切り替えられる）
+            pace-default = <1>;
+            pace-buffer = <12>;
         };
 
         // Gesture: Gesture レイヤーでトラボを上下左右に転がすと、そのレイヤーの I / , / J / L に置いたキーを1回押す

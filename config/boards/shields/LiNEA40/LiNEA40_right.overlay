@@ -19,6 +19,12 @@
         device = <&trackball>;
 
     };
+
+    // スクロールのすき間を埋める処理（linea_scroll_tick）が送り出す信号を、そのまま Mac に送る
+    linea_scroll_listener {
+        compatible = "zmk,input-listener";
+        device = <&linea_scroll_tick>;
+    };
 };
 
 
