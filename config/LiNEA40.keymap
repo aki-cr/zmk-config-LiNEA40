@@ -241,7 +241,7 @@
 &kp EXCL             &kp AT               &kp HASH             &kp DLLR             &kp PRCNT                   &kp CARET            &kp AMPS             &kp STAR             &kp LPAR             &kp RPAR
 &kp LS(LG(N3))       &kp LS(LG(N4))       &kp LS(LG(N5))       &none                &kp UNDER                   &kp MINUS            &kp EQUAL            &kp LBKT             &kp RBKT             &kp MINUS
 &kp LSHIFT           &none                &kp LC(LS(LA(LG(M)))) &kp EXCL             &kp QMARK                   &none                &none                &kp SEMI             &kp SQT              &kp GRAVE
-&kp ESC              &kp LALT             &mt LGUI LANG2       &trans               &none                &mo 6                &kp TAB              &none                &kp LGUI             &none                &none
+&kp ESC              &kp LALT             &kp LGUI             &trans               &none                &mo 6                &kp TAB              &none                &kp LGUI             &none                &none
             
             >;
 
@@ -254,7 +254,7 @@
 &kp F1               &kp F2               &kp F3               &kp F4               &kp F5                      &kp N1               &kp N2               &kp N3               &kp N0               &kp EQUAL
 &kp F6               &kp F7               &kp F8               &kp F9               &kp F10                     &kp N4               &kp N5               &kp N6               &kp PLUS             &kp MINUS
 &kp F11              &kp F12              &trans               &trans               &trans                      &kp N7               &kp N8               &kp N9               &kp STAR             &kp FSLH
-&kp LSHIFT           &kp LALT             &mt LGUI LANG2       &trans               &none                &none                &kp DOT              &kp N0               &kp LGUI             &none                &none
+&kp LSHIFT           &kp LALT             &kp LGUI             &trans               &none                &none                &kp DOT              &kp N0               &kp LGUI             &none                &none
             
             >;
 
@@ -267,7 +267,7 @@
 &trans               &trans               &trans               &trans               &trans                      &kp LC(UP)           &kp LC(LEFT)         &kp UP               &kp LC(RIGHT)        &kp LC(DOWN)
 &kp TAB              &trans               &trans               &trans               &trans                      &kp LC(LS(TAB))      &kp LEFT             &kp DOWN             &kp RIGHT            &mt RALT LC(TAB)
 &trans               &trans               &trans               &trans               &trans                      &kp LC(A)            &kp LG(LEFT)         &none                &kp LG(RIGHT)        &kp LC(E)
-&kp LSHIFT           &kp LALT             &mt LGUI LANG2       &trans               &none                &none                &none                &none                &kp LGUI             &kp C_BRI_DN         &kp C_BRI_UP
+&kp LSHIFT           &kp LALT             &kp LGUI             &trans               &none                &none                &none                &none                &kp LGUI             &kp C_BRI_DN         &kp C_BRI_UP
             
             >;
         };
