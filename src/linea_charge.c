@@ -1,9 +1,8 @@
 /*
- * 充電と電池の残りを LED で知らせる（左右それぞれ、自分の電池を自分の LED で）
- *   充電中:     黄を短く光らせる（3秒ごと）
- *   充電完了:   緑を短く光らせる（10秒ごと）
- *   残りが少ない: USB につないでいないとき、残りが CONFIG_RGBLED_WIDGET_BATTERY_LEVEL_CRITICAL % 以下なら赤を短く（30秒ごと）
- * USB を差した瞬間はすぐ1回光らせる。
+ * 充電の状態を LED で知らせる（左右それぞれ、自分の電池を自分の LED で）。点滅し続けず、変わったときに1回だけ:
+ *   USB を差したとき: 充電中なら黄、充電がいらない（満タン）なら緑を1回
+ *   充電が終わったとき: 緑を1回（長め）
+ * 残りが少ないときの赤は rgbled-widget がもともと出す（CONFIG_RGBLED_WIDGET_BATTERY_LEVEL_CRITICAL 以下で残りが変わるたび）。
  *
  * 判定:
  *   USB の電気が来ているか: nRF52840 の POWER->USBREGSTATUS の VBUSDETECT
@@ -16,12 +15,9 @@
 #include <zephyr/init.h>
 #include <nrfx.h>
 
-#include <zmk/battery.h>
-
 #define CHG_PIN 17
 #define POLL_MS 1000
 
-#define COLOR_RED 1
 #define COLOR_GREEN 2
 #define COLOR_YELLOW 3
 
@@ -36,7 +32,8 @@ extern struct k_msgq led_msgq;
 static const struct device *gpio0 = DEVICE_DT_GET(DT_NODELABEL(gpio0));
 static struct k_work_delayable charge_work;
 static bool was_powered;
-static uint32_t ticks;
+static bool was_charging;
+static uint8_t settle; /* 差した直後は充電 IC が動き出すまで少し待ってから判定する */
 
 static void blink(uint8_t color, uint16_t ms) {
     struct blink_item b = {.color = color, .duration_ms = ms, .sleep_ms = 0};
@@ -46,25 +43,16 @@ static void blink(uint8_t color, uint16_t ms) {
 static void charge_poll(struct k_work *work) {
     bool powered = (NRF_POWER->USBREGSTATUS & POWER_USBREGSTATUS_VBUSDETECT_Msk) != 0;
     bool charging = powered && gpio_pin_get_raw(gpio0, CHG_PIN) == 0;
-    ticks++;
 
     if (powered && !was_powered) {
-        ticks = 0; /* 差した瞬間に1回 */
+        settle = 2;
+    } else if (settle > 0 && --settle == 0) {
+        blink(charging ? COLOR_YELLOW : COLOR_GREEN, 500);
+    } else if (settle == 0 && powered && was_charging && !charging) {
+        blink(COLOR_GREEN, 1000);
     }
     was_powered = powered;
-
-    if (powered) {
-        if (charging && ticks % 3 == 0) {
-            blink(COLOR_YELLOW, 300);
-        } else if (!charging && ticks % 10 == 0) {
-            blink(COLOR_GREEN, 300);
-        }
-    } else {
-        uint8_t soc = zmk_battery_state_of_charge();
-        if (soc > 0 && soc <= CONFIG_RGBLED_WIDGET_BATTERY_LEVEL_CRITICAL && ticks % 30 == 0) {
-            blink(COLOR_RED, 200);
-        }
-    }
+    was_charging = charging;
     k_work_schedule(&charge_work, K_MSEC(POLL_MS));
 }
 
@@ -74,8 +62,9 @@ static int linea_charge_init(void) {
     }
     gpio_pin_configure(gpio0, CHG_PIN, GPIO_INPUT | GPIO_PULL_UP);
     k_work_init_delayable(&charge_work, charge_poll);
-    /* 起動時の widget の表示（電池・接続）が終わってから始める */
+    /* 起動時の widget の表示（電池・接続）が終わってから始める。USB で起動したときは差した扱いにしない */
     was_powered = true;
+    was_charging = gpio_pin_get_raw(gpio0, CHG_PIN) == 0;
     k_work_schedule(&charge_work, K_SECONDS(5));
     return 0;
 }
