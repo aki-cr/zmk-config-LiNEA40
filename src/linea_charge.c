@@ -1,13 +1,15 @@
 /*
- * 充電の状態を LED で知らせる（左右それぞれ、自分の電池を自分の LED で）。点滅し続けず、変わったときに1回だけ:
- *   USB を差したとき: 充電中なら黄、充電がいらない（満タン）なら緑を1回
- *   充電が終わったとき: 緑を1回（長め）
+ * 充電の状態を LED で知らせる（左右それぞれ、自分の電池を自分の LED で）:
+ *   充電中: 黄をつけたまま（ほかの表示で点滅しても、終わると黄に戻る）
+ *   USB を差して充電がいらない（満タン）とき: 緑を1回
+ *   充電が終わったとき: 黄を消して緑を1回（長め）
  * 残りが少ないときの赤は rgbled-widget がもともと出す（CONFIG_RGBLED_WIDGET_BATTERY_LEVEL_CRITICAL 以下で残りが変わるたび）。
  *
  * 判定:
  *   USB の電気が来ているか: nRF52840 の POWER->USBREGSTATUS の VBUSDETECT
  *   充電中か: XIAO nRF52840 の充電 IC（BQ25101）の CHG 端子 = P0.17（充電中は Low）
  * LED は rgbled-widget の送り待ち（led_msgq）に頼んで光らせる（widget のほかの表示とぶつからないように）。
+ * つけたままの色は widget の「レイヤーの色」（led_layer_color）を使う。LiNEA40 はレイヤーの色を使っていないので空いている。
  */
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
@@ -28,6 +30,7 @@ struct blink_item {
     uint16_t sleep_ms;
 };
 extern struct k_msgq led_msgq;
+extern uint8_t led_layer_color;
 
 static const struct device *gpio0 = DEVICE_DT_GET(DT_NODELABEL(gpio0));
 static struct k_work_delayable charge_work;
@@ -40,16 +43,32 @@ static void blink(uint8_t color, uint16_t ms) {
     k_msgq_put(&led_msgq, &b, K_NO_WAIT);
 }
 
+/* つけたままの色を変える（0 で消す） */
+static void steady(uint8_t color) {
+    if (led_layer_color == color) {
+        return;
+    }
+    led_layer_color = color;
+    struct blink_item b = {.color = color, .duration_ms = 0};
+    k_msgq_put(&led_msgq, &b, K_NO_WAIT);
+}
+
 static void charge_poll(struct k_work *work) {
     bool powered = (NRF_POWER->USBREGSTATUS & POWER_USBREGSTATUS_VBUSDETECT_Msk) != 0;
     bool charging = powered && gpio_pin_get_raw(gpio0, CHG_PIN) == 0;
 
     if (powered && !was_powered) {
         settle = 2;
-    } else if (settle > 0 && --settle == 0) {
-        blink(charging ? COLOR_YELLOW : COLOR_GREEN, 500);
-    } else if (settle == 0 && powered && was_charging && !charging) {
+    } else if (settle > 0) {
+        if (--settle == 0 && !charging) {
+            blink(COLOR_GREEN, 500);
+        }
+    } else if (powered && was_charging && !charging) {
+        steady(0);
         blink(COLOR_GREEN, 1000);
+    }
+    if (settle == 0) {
+        steady(charging ? COLOR_YELLOW : 0);
     }
     was_powered = powered;
     was_charging = charging;
