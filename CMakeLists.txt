@@ -21,3 +21,9 @@ if((NOT CONFIG_ZMK_SPLIT) OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
   # コンボも ZMK と同じく hold-tap の後・keymap の前（ZMK の combo.c はキーマップに zmk,combos が無いので空になる）
   target_sources(app PRIVATE src/linea_aml.c src/linea_hold_tap.c src/linea_combo.c)
 endif()
+
+# 充電中・充電完了・残りが少ないを LED で知らせる（左右どちらも、自分の電池を）
+if(CONFIG_RGBLED_WIDGET AND CONFIG_ZMK_BATTERY_REPORTING)
+  zephyr_library_named(linea_charge)
+  zephyr_library_sources(src/linea_charge.c)
+endif()
