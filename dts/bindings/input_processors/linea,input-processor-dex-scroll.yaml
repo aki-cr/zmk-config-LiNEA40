@@ -1,0 +1,7 @@
+description: |
+  DeX モード（linea_dex.c。プロファイル 3）のときだけ、ホイールの信号の向きを逆にし、量に倍率をかける。
+  向きと倍率は LiNEA40 Studio から変えられる（設定 29・30）。
+
+compatible: "linea,input-processor-dex-scroll"
+
+include: ip_zero_param.yaml

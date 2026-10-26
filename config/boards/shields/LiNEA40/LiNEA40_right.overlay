@@ -24,6 +24,7 @@
     linea_scroll_listener {
         compatible = "zmk,input-listener";
         device = <&linea_scroll_tick>;
+        input-processors = <&linea_dex_scroll>;
     };
 };
 

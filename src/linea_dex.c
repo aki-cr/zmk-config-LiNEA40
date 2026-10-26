@@ -8,6 +8,8 @@
  *   ⌘← / ⌘→ → Home / End                 ⌘↑ / ⌘↓ → Ctrl+Home / Ctrl+End
  *   ⌘Backspace → Shift+Home のあと Backspace（行頭まで消す）
  *   ⇧⌘3 / ⇧⌘4 / ⇧⌘5 → PrintScreen（Android のスクリーンショット）
+ * カーソルの速さとスクロールの向き・量も DeX 用にする（linea_accel.c・linea_dex_scroll.c）
+ *
  *   ⌥← / ⌥→ / ⌥Backspace / ⌥Delete → Ctrl+同じキー（単語単位）
  *   キーマップに書いた Mac 用の Ctrl つきキー: ⌃A / ⌃E → Home / End、⌃↑（Mission Control）→ Meta+Tab（最近のアプリ）、
  *   ⌃← / ⌃→ / ⌃↓（デスクトップの切り替えなど。DeX に同じ操作が無い）→ 何も送らない
@@ -55,7 +57,7 @@ struct held {
 static struct held held[HELD_MAX];
 static bool switcher; /* ⌘Tab で Alt を押したまま */
 
-static bool dex_on(void) {
+bool linea_dex_active(void) {
     int profile = linea_setting_get(LINEA_SET_DEX_PROFILE, DEX_PROFILE_DEFAULT);
     if (profile <= 0) {
         return false;
@@ -269,7 +271,7 @@ static int dex_listener(const zmk_event_t *eh) {
         return ZMK_EV_EVENT_BUBBLE;
     }
 
-    if (!dex_on()) {
+    if (!linea_dex_active()) {
         return ZMK_EV_EVENT_BUBBLE;
     }
     struct held *h = add(ev);

@@ -118,6 +118,12 @@
             idle-ms = <250>;
         };
 
+        // DeX モード（プロファイル 3）のときだけ、スクロールの向きを逆にして量を変える（src/linea_dex_scroll.c）
+        linea_dex_scroll: linea_dex_scroll {
+            compatible = "linea,input-processor-dex-scroll";
+            #input-processor-cells = <0>;
+        };
+
         zip_wheel_scaler: zip_wheel_scaler {
             compatible = "zmk,input-processor-scaler";
             #input-processor-cells = <2>;
@@ -129,9 +135,11 @@
 };
 
 &msc_input_listener {
+    input-processors = <&linea_dex_scroll>;
+
     speed_up {
         layers = <FUNCTION>;
-        input-processors = <&zip_wheel_scaler 3 1>; //スクロールを3倍速にする
+        input-processors = <&zip_wheel_scaler 3 1>, <&linea_dex_scroll>; //スクロールを3倍速にする
     };
 };
 
@@ -155,7 +163,8 @@
             <&linea_accel_scroll>,
             <&zip_xy_to_scroll_mapper>,
             <&zip_scroll_scaler 1 10>,
-            <&linea_scroll_tick>;
+            <&linea_scroll_tick>,
+            <&linea_dex_scroll>;
         // 動いた量の 1/10 を段数にし、linea_scroll_tick で1回 ±1 段にそろえる（エンコーダーと同じ形）。
         // 1回に何段もまとめて送ると、Mac Mouse Fix の慣性が途切れたり急に止まったりした。ゆっくり2倍・15ms おき送信も不安定だった
     };

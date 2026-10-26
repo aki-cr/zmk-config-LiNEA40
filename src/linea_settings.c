@@ -72,6 +72,11 @@ static bool in_range(uint8_t id, int32_t v) {
         return v >= 0 && v <= 2000;
     case LINEA_SET_DEX_PROFILE:
         return v >= 0 && v <= 5;
+    case LINEA_SET_DEX_CURSOR:
+    case LINEA_SET_DEX_SCROLL_SPEED:
+        return v >= 100 && v <= 5000;
+    case LINEA_SET_DEX_SCROLL_INVERT:
+        return v == 0 || v == 1;
     case LINEA_SET_AML_EXCL_LO:
     case LINEA_SET_AML_EXCL_HI:
         return v != 0x7fffffff; /* ビットの並びなので、設定なしの印以外は何でもよい */
@@ -87,6 +92,9 @@ int32_t linea_setting_get(enum linea_setting_id id, int32_t def) {
     int32_t v = values[id];
     return v == UNSET ? def : v;
 }
+
+/* linea_dex.c（右手側だけ）が本物を持つ */
+__weak bool linea_dex_active(void) { return false; }
 
 /* ---- 保存（Zephyr の settings。ペアリングの記録と同じ場所） ---- */
 static void save_work_handler(struct k_work *work) {

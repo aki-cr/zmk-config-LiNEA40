@@ -93,6 +93,10 @@ static int accel_handle_event(const struct device *dev, struct input_event *even
     /* LiNEA40 Studio から変えた速さ（CPI を変えたのと同じ）。ビルドせずにすぐ反映する */
     if (cfg->settings_slot == 1) {
         factor = (int32_t)((int64_t)factor * linea_setting_get(LINEA_SET_CURSOR_SPEED, 1000) / 1000);
+        /* DeX モード（プロファイル 3）では Android 用の倍率も掛ける（Android は Mac より同じ量で大きく動くため） */
+        if (linea_dex_active()) {
+            factor = (int32_t)((int64_t)factor * linea_setting_get(LINEA_SET_DEX_CURSOR, LINEA_DEX_CURSOR_DEFAULT) / 1000);
+        }
         /* 精密モード: ドライバーの snipe と同じく、いちばん上のレイヤーが Precision のとき */
         /* レイヤーはキーマップを持つ右手側（セントラル）にしか無い。左手側では使わない */
 #if !IS_ENABLED(CONFIG_ZMK_SPLIT) || IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)

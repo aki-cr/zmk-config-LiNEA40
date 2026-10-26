@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /* 設定の番号（LiNEA40 Studio と同じ番号を使う） */
@@ -35,8 +36,19 @@ enum linea_setting_id {
     LINEA_SET_SCROLL_PACE_BUFFER = 25, /* すき間を埋めるときに貯める段の上限 */
     LINEA_SET_SCROLL_HORIZONTAL = 26, /* トラボの横スクロール: 1 = あり 0 = なし（縦だけ） */
     LINEA_SET_DEX_PROFILE = 27,    /* DeX モード（linea_dex.c）にする Bluetooth プロファイル: 1〜5（0 = 使わない） */
+    LINEA_SET_DEX_CURSOR = 28,     /* DeX モードのカーソルの速さの倍率（1000 = Mac と同じ） */
+    LINEA_SET_DEX_SCROLL_INVERT = 29, /* DeX モードでスクロールの向きを逆にする: 1 = 逆 0 = Mac と同じ */
+    LINEA_SET_DEX_SCROLL_SPEED = 30, /* DeX モードのスクロールの量の倍率（1000 = Mac と同じ） */
     LINEA_SET_COUNT,
 };
 
 /* 値が設定されていなければ def を返す */
 int32_t linea_setting_get(enum linea_setting_id id, int32_t def);
+
+/* DeX モード（決めたプロファイルにつないでいる）か。linea_dex.c が無い左手側では常に false */
+bool linea_dex_active(void);
+
+/* DeX モードの既定値（LiNEA40 Studio で変えていないとき） */
+#define LINEA_DEX_CURSOR_DEFAULT 600
+#define LINEA_DEX_SCROLL_INVERT_DEFAULT 1
+#define LINEA_DEX_SCROLL_SPEED_DEFAULT 1000

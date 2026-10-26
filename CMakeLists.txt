@@ -1,7 +1,7 @@
 # LiNEA40 用の追加部品。どちらもトラボとキーマップを持つ右手側（セントラル）でだけ使う
 if(CONFIG_ZMK_POINTING)
   zephyr_library()
-  zephyr_library_sources(src/linea_accel.c src/linea_gesture.c src/linea_tick.c src/linea_settings.c)
+  zephyr_library_sources(src/linea_accel.c src/linea_gesture.c src/linea_tick.c src/linea_settings.c src/linea_dex_scroll.c)
   zephyr_library_include_directories(${APPLICATION_SOURCE_DIR}/include)
 endif()
 
