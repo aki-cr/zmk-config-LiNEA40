@@ -28,7 +28,7 @@
 #define MIN_SPEED 2     /* これより遅くなったら止める（段/秒） */
 #define GLIDE_MIN 12    /* これより遅く転がしたときは流さない（段/秒）。Android のホイールは1段が最小なので、
                          * そっと転がしたあとに流すと「シュッ、ピタ、シュッ」と2回スクロールしたようになった */
-#define MAX_SPEED 60    /* 流し始めの速さの上限（段/秒）。90 では速すぎた */
+#define MAX_SPEED 60    /* 流し始めの速さの上限（段/秒）。90 では速すぎた。設定 32 の最高速度でも抑える */
 
 /* 転がすのをやめたとみなすまでの時間: 段が届く間隔の2倍（速いほど早く流し始め、すき間で止まって見えないように） */
 static int32_t stop_ms(int32_t vel_v, int32_t vel_h) {
@@ -38,6 +38,8 @@ static int32_t stop_ms(int32_t vel_v, int32_t vel_h) {
 
 struct dex_scroll_data {
     const struct device *dev;
+    int32_t budget;    /* 最高速度の残り（段 × 1000）。時間で貯まり、送った段で減る */
+    int64_t budget_time;
     int32_t rem_v, rem_h; /* 倍率をかけた端数（縦・横） */
     int64_t last_time;
     /* 慣性（縦・横それぞれの速さ。段/秒 × 1000） */
@@ -61,7 +63,8 @@ static void track(int64_t now, int64_t *last, int32_t *vel, int32_t out) {
     }
     int32_t inst = out * 1000 * 1000 / (int32_t)MAX(dt, 8);
     *vel = (*vel * 6 + inst * 4) / 10;
-    *vel = CLAMP(*vel, -MAX_SPEED * 1000, MAX_SPEED * 1000);
+    int32_t cap = MIN(MAX_SPEED, linea_setting_get(LINEA_SET_DEX_SCROLL_MAX, LINEA_DEX_SCROLL_MAX_DEFAULT)) * 1000;
+    *vel = CLAMP(*vel, -cap, cap);
 }
 
 /* 速さを1コマ分すすめて、送る段を返す */
@@ -160,6 +163,16 @@ static int dex_scroll_handle_event(const struct device *dev, struct input_event 
     int32_t scaled = v * milli + *rem;
     int32_t out = scaled / 1000;
     *rem = scaled - out * 1000;
+    /* 最高速度: 速く転がしても設定 32（段/秒）より速く送らない。超えた分は捨てる（あとから遅れて流れないように） */
+    if (out != 0) {
+        int32_t max = linea_setting_get(LINEA_SET_DEX_SCROLL_MAX, LINEA_DEX_SCROLL_MAX_DEFAULT);
+        int64_t el = MIN(now - data->budget_time, 1000);
+        data->budget_time = now;
+        data->budget = MIN(data->budget + (int32_t)(el * max), 2000); /* 貯めておけるのは2段まで */
+        int32_t allow = data->budget / 1000;
+        out = CLAMP(out, -allow, allow);
+        data->budget -= abs(out) * 1000;
+    }
     event->value = out;
 
     /* 慣性: 転がしている間は速さを覚えておき、やめたら流し始める。

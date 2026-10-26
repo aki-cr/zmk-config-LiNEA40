@@ -77,6 +77,8 @@ static bool in_range(uint8_t id, int32_t v) {
         return v >= 100 && v <= 5000;
     case LINEA_SET_DEX_SCROLL_INVERT:
         return v == 0 || v == 1;
+    case LINEA_SET_DEX_SCROLL_MAX:
+        return v >= 3 && v <= 125;
     case LINEA_SET_DEX_INERTIA:
         return v == 0 || (v >= 100 && v <= 2000);
     case LINEA_SET_AML_EXCL_LO:

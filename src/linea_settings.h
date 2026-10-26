@@ -40,6 +40,7 @@ enum linea_setting_id {
     LINEA_SET_DEX_SCROLL_INVERT = 29, /* DeX モードでスクロールの向きを逆にする: 1 = 逆 0 = Mac と同じ */
     LINEA_SET_DEX_SCROLL_SPEED = 30, /* DeX モードのスクロールの量の倍率（1000 = Mac と同じ） */
     LINEA_SET_DEX_INERTIA = 31,    /* DeX モードのスクロールの慣性: 減っていく速さ（ms。大きいほど長く流れる。0 = なし） */
+    LINEA_SET_DEX_SCROLL_MAX = 32, /* DeX モードのスクロールの最高速度（段/秒）。速く転がしてもこれより速くしない */
     LINEA_SET_COUNT,
 };
 
@@ -54,3 +55,4 @@ bool linea_dex_active(void);
 #define LINEA_DEX_SCROLL_INVERT_DEFAULT 1
 #define LINEA_DEX_SCROLL_SPEED_DEFAULT 750 /* 1000 では速すぎた（2026-10-26） */
 #define LINEA_DEX_INERTIA_DEFAULT 400
+#define LINEA_DEX_SCROLL_MAX_DEFAULT 20
