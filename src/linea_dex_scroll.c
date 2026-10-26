@@ -7,8 +7,9 @@
  * 慣性: Mac では LiNEA40 Scroll（Mac 側）が慣性をつけるが、Android のホイールは回した分だけきっちり止まる。
  * そこで DeX モードのときだけ、転がすのをやめたあとも、最後の速さから少しずつ弱めながら段を送り続ける。
  *   - 速さは、最近届いた段の間隔から出す（段/秒）
- *   - 最後の段から STOP_MS 届かなければ流し始める。減り方は設定 31（ms。大きいほど長く流れる。0 = 慣性なし）
- *   - また転がしたら、流れている分はすぐ止める
+ *   - 段の間隔の2倍だけ届かなければ流し始める（速く転がしたときだけ。ゆっくりのときは流さない）
+ *   - 減り方は設定 31（ms。大きいほど長く流れる。0 = 慣性なし）
+ *   - 流れている途中で同じ向きに転がしたら、そのまま続ける。逆向きなら止める
  *   - 流す段はこの部品自身を「入力の出どころ」にして input_report_rel で出し、
  *     LiNEA40_right.overlay の linea_dex_inertia_listener（処理なし）がそのまま送る（向き・倍率はもうかけてある）
  */
@@ -23,11 +24,17 @@
 
 #include "linea_settings.h"
 
-#define STOP_MS 60      /* これだけ段が届かなければ、転がすのをやめたとみなして流し始める */
 #define FRAME_MS 16     /* 流すときの間隔 */
 #define MIN_SPEED 2     /* これより遅くなったら止める（段/秒） */
-#define MIN_START 5     /* そっと転がしたときも、少なくともこの速さで少し流す（段/秒）。Mac Mouse Fix と同じく小さな動きにも慣性 */
+#define GLIDE_MIN 12    /* これより遅く転がしたときは流さない（段/秒）。Android のホイールは1段が最小なので、
+                         * そっと転がしたあとに流すと「シュッ、ピタ、シュッ」と2回スクロールしたようになった */
 #define MAX_SPEED 60    /* 流し始めの速さの上限（段/秒）。90 では速すぎた */
+
+/* 転がすのをやめたとみなすまでの時間: 段が届く間隔の2倍（速いほど早く流し始め、すき間で止まって見えないように） */
+static int32_t stop_ms(int32_t vel_v, int32_t vel_h) {
+    int32_t v = MAX(abs(vel_v), abs(vel_h)) / 1000;
+    return v > 0 ? CLAMP(2000 / v, 25, 100) : 100;
+}
 
 struct dex_scroll_data {
     const struct device *dev;
@@ -78,22 +85,23 @@ static void glide_work_handler(struct k_work *work) {
 
     k_spinlock_key_t key = k_spin_lock(&data->lock);
     if (!data->gliding) {
-        /* 最後の段から STOP_MS たったか（まだ転がしているなら待つ） */
+        /* 転がすのをやめたか（まだ転がしているなら待つ） */
         int64_t idle = k_uptime_get() - MAX(data->last_v, data->last_h);
-        if (idle < STOP_MS) {
+        int32_t wait = stop_ms(data->vel_v, data->vel_h);
+        if (idle < wait) {
             k_spin_unlock(&data->lock, key);
-            k_work_schedule(&data->glide_work, K_MSEC(STOP_MS - idle));
+            k_work_schedule(&data->glide_work, K_MSEC(wait - idle));
             return;
+        }
+        /* ゆっくり転がしたときは流さない */
+        if (abs(data->vel_v) < GLIDE_MIN * 1000) {
+            data->vel_v = 0;
+        }
+        if (abs(data->vel_h) < GLIDE_MIN * 1000) {
+            data->vel_h = 0;
         }
         data->gliding = true;
         data->pos_v = data->pos_h = 0;
-        /* そっと転がしただけでも少し流す（慣性なしでピタッと止まらないように） */
-        if (data->vel_v != 0 && abs(data->vel_v) < MIN_START * 1000) {
-            data->vel_v = data->vel_v > 0 ? MIN_START * 1000 : -MIN_START * 1000;
-        }
-        if (data->vel_h != 0 && abs(data->vel_h) < MIN_START * 1000) {
-            data->vel_h = data->vel_h > 0 ? MIN_START * 1000 : -MIN_START * 1000;
-        }
     }
     int32_t dv = 0, dh = 0;
     if (tau > 0 && linea_dex_active()) {
@@ -104,6 +112,14 @@ static void glide_work_handler(struct k_work *work) {
     }
     bool more = data->vel_v != 0 || data->vel_h != 0;
     data->gliding = more;
+    /* 流している間も「最後に段が届いた時刻」を進める（また転がしたとき、速さを流れの続きから測る） */
+    int64_t now = k_uptime_get();
+    if (data->vel_v) {
+        data->last_v = now;
+    }
+    if (data->vel_h) {
+        data->last_h = now;
+    }
     k_spin_unlock(&data->lock, key);
 
     if (dv) {
@@ -146,20 +162,20 @@ static int dex_scroll_handle_event(const struct device *dev, struct input_event 
     *rem = scaled - out * 1000;
     event->value = out;
 
-    /* 慣性: 転がしている間は速さを覚えておき、流れている分は止める。やめたら流し始める */
+    /* 慣性: 転がしている間は速さを覚えておき、やめたら流し始める。
+     * 流れている途中でまた同じ向きに転がしたら、流れの速さを引き継いでそのまま続ける
+     * （止めてから転がした分を送ると「止まってまたスクロール」に見えた）。逆向きなら止める（track で） */
     if (out != 0 && linea_setting_get(LINEA_SET_DEX_INERTIA, LINEA_DEX_INERTIA_DEFAULT) > 0) {
         k_spinlock_key_t key = k_spin_lock(&data->lock);
-        if (data->gliding) {
-            data->gliding = false;
-            data->vel_v = data->vel_h = 0;
-        }
+        data->gliding = false;
         if (event->code == INPUT_REL_WHEEL) {
             track(now, &data->last_v, &data->vel_v, out);
         } else {
             track(now, &data->last_h, &data->vel_h, out);
         }
+        int32_t wait = stop_ms(data->vel_v, data->vel_h);
         k_spin_unlock(&data->lock, key);
-        k_work_reschedule(&data->glide_work, K_MSEC(STOP_MS));
+        k_work_reschedule(&data->glide_work, K_MSEC(wait));
     }
 
     return ZMK_INPUT_PROC_CONTINUE;
