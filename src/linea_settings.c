@@ -70,6 +70,8 @@ static bool in_range(uint8_t id, int32_t v) {
         return v >= 100 && v <= 600000;
     case LINEA_SET_AML_PRIOR_IDLE:
         return v >= 0 && v <= 2000;
+    case LINEA_SET_DEX_PROFILE:
+        return v >= 0 && v <= 5;
     case LINEA_SET_AML_EXCL_LO:
     case LINEA_SET_AML_EXCL_HI:
         return v != 0x7fffffff; /* ビットの並びなので、設定なしの印以外は何でもよい */

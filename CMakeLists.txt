@@ -20,6 +20,11 @@ endif()
 if((NOT CONFIG_ZMK_SPLIT) OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
   # コンボも ZMK と同じく hold-tap の後・keymap の前（ZMK の combo.c はキーマップに zmk,combos が無いので空になる）
   target_sources(app PRIVATE src/linea_aml.c src/linea_hold_tap.c src/linea_combo.c)
+  # DeX モード（プロファイル 3 のときだけ Mac のキー操作を Android 用に置き換える）は、キーの知らせを hid_listener より前に書き換える。
+  # 設定（linea_settings.c）がトラボのある右手側にしか無いので、ZMK_POINTING のときだけ
+  if(CONFIG_ZMK_POINTING)
+    target_sources(app PRIVATE src/linea_dex.c)
+  endif()
 endif()
 
 # 充電中・充電完了・残りが少ないを LED で知らせる（左右どちらも、自分の電池を）
