@@ -4,7 +4,8 @@
  *
  *   ⌘ → Ctrl（⌘C / ⌘V / ⌘Z / ⌘S / ⌘W / ⌘T / ⌘F / ⌘A / ⌘+クリック などはこれで同じになる）
  *   ⌘Tab → Alt+Tab（⌘を押している間は Alt も押したまま。続けて Tab で次のアプリ）
- *   ⌘Space → Meta（DeX のアプリ一覧）     ⌘Q → Alt+F4
+ *   ⌘Space → Alt+A（DeX のアプリ一覧）    ⌘Q → Alt+F4
+ *   ⌘H → Meta+Enter（ホームへ戻る）
  *   ⌘← / ⌘→ → Home / End                 ⌘↑ / ⌘↓ → Ctrl+Home / Ctrl+End
  *   ⌘Backspace → Shift+Home のあと Backspace（行頭まで消す）
  *   ⇧⌘3 / ⇧⌘4 / ⇧⌘5 → PrintScreen（Android のスクリーンショット）
@@ -183,9 +184,15 @@ static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h
             h->implicit = (h->implicit & ~CTL) | MOD_LALT;
             return true;
         case HID_USAGE_KEY_KEYBOARD_SPACEBAR:
-            h->keycode = HID_USAGE_KEY_KEYBOARD_LEFT_GUI;
+            /* Windows キーだけでは開かなかった。この Galaxy のアプリ一覧は Alt+A（2026-10-26 確認） */
+            h->keycode = HID_USAGE_KEY_KEYBOARD_A;
             h->mask = CTL;
-            h->implicit = 0;
+            h->implicit = MOD_LALT;
+            return true;
+        case HID_USAGE_KEY_KEYBOARD_H:
+            h->keycode = HID_USAGE_KEY_KEYBOARD_RETURN_ENTER;
+            h->mask = CTL;
+            h->implicit = MOD_LGUI;
             return true;
         case HID_USAGE_KEY_KEYBOARD_3_AND_HASH:
         case HID_USAGE_KEY_KEYBOARD_4_AND_DOLLAR:

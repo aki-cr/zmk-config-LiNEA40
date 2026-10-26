@@ -26,6 +26,12 @@
         device = <&linea_scroll_tick>;
         input-processors = <&linea_dex_scroll>;
     };
+
+    // DeX モードのスクロールの慣性（linea_dex_scroll）が流す段を、そのまま送る（向き・倍率はもうかけてある）
+    linea_dex_inertia_listener {
+        compatible = "zmk,input-listener";
+        device = <&linea_dex_scroll>;
+    };
 };
 
 
