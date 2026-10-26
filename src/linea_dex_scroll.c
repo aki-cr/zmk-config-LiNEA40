@@ -143,8 +143,8 @@ static int dex_scroll_handle_event(const struct device *dev, struct input_event 
     if (event->type != INPUT_EV_REL || (event->code != INPUT_REL_WHEEL && event->code != INPUT_REL_HWHEEL)) {
         return ZMK_INPUT_PROC_CONTINUE;
     }
-    if (!linea_dex_active()) {
-        return ZMK_INPUT_PROC_CONTINUE;
+    if (!linea_dex_active() || event->value == 0) {
+        return ZMK_INPUT_PROC_CONTINUE; /* 0 の段（すき間を埋める処理が貯めた分）は数えない */
     }
 
     /* しばらく止まっていたら端数を捨てる */
