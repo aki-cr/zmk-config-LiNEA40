@@ -131,7 +131,8 @@ static int tick_handle_event(const struct device *dev, struct input_event *event
     int32_t *carry = axis == 1 ? &data->carry_v : &data->carry_h;
 
     /* すき間を埋める: 段を貯めて、送り出しはこの部品が行う（ここでは送らない） */
-    if (linea_setting_get(LINEA_SET_SCROLL_PACE, cfg->pace_default)) {
+    /* DeX モード（Galaxy）では、すき間を埋める処理をいつも使う（Mac Mouse Fix のような慣性が無く、転がし直しのすき間で止まるため） */
+    if (linea_setting_get(LINEA_SET_SCROLL_PACE, cfg->pace_default) || linea_dex_active()) {
         int32_t v = event->value;
         event->value = 0;
         if (v == 0) {
