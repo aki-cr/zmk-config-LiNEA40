@@ -52,5 +52,5 @@ bool linea_dex_active(void);
 /* DeX モードの既定値（LiNEA40 Studio で変えていないとき） */
 #define LINEA_DEX_CURSOR_DEFAULT 600
 #define LINEA_DEX_SCROLL_INVERT_DEFAULT 1
-#define LINEA_DEX_SCROLL_SPEED_DEFAULT 1000
+#define LINEA_DEX_SCROLL_SPEED_DEFAULT 750 /* 1000 では速すぎた（2026-10-26） */
 #define LINEA_DEX_INERTIA_DEFAULT 400

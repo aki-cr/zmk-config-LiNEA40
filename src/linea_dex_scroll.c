@@ -25,8 +25,9 @@
 
 #define STOP_MS 60      /* これだけ段が届かなければ、転がすのをやめたとみなして流し始める */
 #define FRAME_MS 16     /* 流すときの間隔 */
-#define MIN_SPEED 6     /* これより遅ければ流さない・止める（段/秒） */
-#define MAX_SPEED 90    /* 流し始めの速さの上限（段/秒） */
+#define MIN_SPEED 2     /* これより遅くなったら止める（段/秒） */
+#define MIN_START 5     /* そっと転がしたときも、少なくともこの速さで少し流す（段/秒）。Mac Mouse Fix と同じく小さな動きにも慣性 */
+#define MAX_SPEED 60    /* 流し始めの速さの上限（段/秒）。90 では速すぎた */
 
 struct dex_scroll_data {
     const struct device *dev;
@@ -48,7 +49,7 @@ static void track(int64_t now, int64_t *last, int32_t *vel, int32_t out) {
     if (out == 0) {
         return;
     }
-    if (dt > 150 || (int64_t)*vel * out < 0) {
+    if (dt > 300 || (int64_t)*vel * out < 0) {
         *vel = 0; /* 止まっていた・向きが変わった */
     }
     int32_t inst = out * 1000 * 1000 / (int32_t)MAX(dt, 8);
@@ -86,6 +87,13 @@ static void glide_work_handler(struct k_work *work) {
         }
         data->gliding = true;
         data->pos_v = data->pos_h = 0;
+        /* そっと転がしただけでも少し流す（慣性なしでピタッと止まらないように） */
+        if (data->vel_v != 0 && abs(data->vel_v) < MIN_START * 1000) {
+            data->vel_v = data->vel_v > 0 ? MIN_START * 1000 : -MIN_START * 1000;
+        }
+        if (data->vel_h != 0 && abs(data->vel_h) < MIN_START * 1000) {
+            data->vel_h = data->vel_h > 0 ? MIN_START * 1000 : -MIN_START * 1000;
+        }
     }
     int32_t dv = 0, dh = 0;
     if (tau > 0 && linea_dex_active()) {
