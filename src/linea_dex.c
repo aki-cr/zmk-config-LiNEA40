@@ -9,6 +9,7 @@
  *   ⌘← / ⌘→ → Home / End                 ⌘↑ / ⌘↓ → Ctrl+Home / Ctrl+End
  *   ⌘Backspace → Shift+Home のあと Backspace（行頭まで消す）
  *   ⇧⌘3 / ⇧⌘4 / ⇧⌘5 → PrintScreen（Android のスクリーンショット）
+ *   英数 / かな → 今の向きと違うときだけ切り替えを送る（Mac と同じく、英数で必ず英語・かなで必ず日本語。下の translate_lang）
  * カーソルの速さとスクロールの向き・量も DeX 用にする（linea_accel.c・linea_dex_scroll.c）
  *
  *   ⌥← / ⌥→ / ⌥Backspace / ⌥Delete → Ctrl+同じキー（単語単位）
@@ -118,6 +119,33 @@ static void tap_shift_home(void) {
     zmk_endpoints_send_report(HID_USAGE_KEY);
 }
 
+/*
+ * 英数 / かな: Gboard はかな（LANG1）を「日本語⇔英語の切り替え」として扱い、英数（LANG2）では何もしない（2026-10-27 確認）。
+ * そこで今どちらかをここで覚えておき、違うときだけ切り替え（LANG1）を送る。Mac と同じく、英数を押せば必ず英語・かなを押せば必ず日本語。
+ * 覚えている向きと Gboard がずれたとき（ホーム画面で押した、Gboard 側で切り替えたなど）は、
+ * 同じキーを LANG_RESYNC_MS 以内にもう一度押すと、覚えている向きのまま切り替えを送って合わせ直す。
+ */
+#define LANG_RESYNC_MS 1500
+static bool lang_ja;        /* 日本語にしたつもりか（つないだ直後は英語とみなす） */
+static int64_t lang_noop_at; /* 何も送らなかった押し方の時刻（もう一度押したら合わせ直す） */
+static bool lang_noop_ja;
+
+static bool translate_lang(bool want_ja, struct held *h) {
+    int64_t now = k_uptime_get();
+    bool resync = lang_ja == want_ja && lang_noop_at && lang_noop_ja == want_ja &&
+                  now - lang_noop_at <= LANG_RESYNC_MS;
+    if (lang_ja == want_ja && !resync) {
+        lang_noop_at = now;
+        lang_noop_ja = want_ja;
+        h->swallow = true;
+        return true;
+    }
+    lang_ja = want_ja;
+    lang_noop_at = 0;
+    h->keycode = HID_USAGE_KEY_KEYBOARD_LANG1;
+    return true;
+}
+
 /* 押したキーの置き換えを決める。置き換えないときは false */
 static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h) {
     uint32_t k = ev->keycode;
@@ -143,6 +171,10 @@ static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h
     }
     if (is_mod(ev->usage_page, k)) {
         return false;
+    }
+
+    if (!cmd && (k == HID_USAGE_KEY_KEYBOARD_LANG1 || k == HID_USAGE_KEY_KEYBOARD_LANG2)) {
+        return translate_lang(k == HID_USAGE_KEY_KEYBOARD_LANG1, h);
     }
 
     if (cmd) {
