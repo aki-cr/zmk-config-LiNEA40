@@ -10,6 +10,7 @@
  *   ⌘Backspace → Shift+Home のあと Backspace（行頭まで消す）
  *   ⇧⌘3 / ⇧⌘4 / ⇧⌘5 → PrintScreen（Android のスクリーンショット）
  *   英数 / かな → 今の向きと違うときだけ切り替えを送る（Mac と同じく、英数で必ず英語・かなで必ず日本語。下の translate_lang）
+ *   ⌥+英数 / ⌥+かな → ずれたときの合わせ直し    ⌃+英数 / ⌃+かな → 無変換 / 変換（試し）
  * カーソルの速さとスクロールの向き・量も DeX 用にする（linea_accel.c・linea_dex_scroll.c）
  *
  *   ⌥← / ⌥→ / ⌥Backspace / ⌥Delete → Ctrl+同じキー（単語単位）
@@ -122,26 +123,29 @@ static void tap_shift_home(void) {
 /*
  * 英数 / かな: Gboard はかな（LANG1）を「日本語⇔英語の切り替え」として扱い、英数（LANG2）では何もしない（2026-10-27 確認）。
  * そこで今どちらかをここで覚えておき、違うときだけ切り替え（LANG1）を送る。Mac と同じく、英数を押せば必ず英語・かなを押せば必ず日本語。
- * 覚えている向きと Gboard がずれたとき（ホーム画面で押した、Gboard 側で切り替えたなど）は、
- * 同じキーを LANG_RESYNC_MS 以内にもう一度押すと、覚えている向きのまま切り替えを送って合わせ直す。
+ * 同じキーは何回押しても何もしない（続けて2回押すと合わせ直す形は、ふだん2回押したときに逆へ切り替わった）。
+ * 覚えている向きと Gboard がずれたとき（ホーム画面で押した、Gboard 側で切り替えたなど）は、⌥+英数 / ⌥+かな で
+ * 覚えている向きに関係なく切り替えを送って合わせ直す。
+ * 試し: ⌃+英数 → 無変換、⌃+かな → 変換 をそのまま送る（Gboard がこれを「英語へ」「日本語へ」として扱うなら、覚えておく必要がなくなる）
  */
-#define LANG_RESYNC_MS 1500
-static bool lang_ja;        /* 日本語にしたつもりか（つないだ直後は英語とみなす） */
-static int64_t lang_noop_at; /* 何も送らなかった押し方の時刻（もう一度押したら合わせ直す） */
-static bool lang_noop_ja;
+static bool lang_ja; /* 日本語にしたつもりか（つないだ直後は英語とみなす） */
 
 static bool translate_lang(bool want_ja, struct held *h) {
-    int64_t now = k_uptime_get();
-    bool resync = lang_ja == want_ja && lang_noop_at && lang_noop_ja == want_ja &&
-                  now - lang_noop_at <= LANG_RESYNC_MS;
-    if (lang_ja == want_ja && !resync) {
-        lang_noop_at = now;
-        lang_noop_ja = want_ja;
+    uint8_t mods = zmk_hid_get_explicit_mods() | h->implicit;
+    if (mods & CTL) {
+        h->keycode = want_ja ? HID_USAGE_KEY_KEYBOARD_INTERNATIONAL4 : HID_USAGE_KEY_KEYBOARD_INTERNATIONAL5;
+        h->mask = CTL;
+        h->implicit = 0;
+        return true;
+    }
+    if (mods & ALT) {
+        h->mask = ALT;
+        h->implicit = 0;
+    } else if (lang_ja == want_ja) {
         h->swallow = true;
         return true;
     }
     lang_ja = want_ja;
-    lang_noop_at = 0;
     h->keycode = HID_USAGE_KEY_KEYBOARD_LANG1;
     return true;
 }
