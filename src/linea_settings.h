@@ -50,6 +50,9 @@ int32_t linea_setting_get(enum linea_setting_id id, int32_t def);
 /* DeX モード（決めたプロファイルにつないでいる）か。linea_dex.c が無い左手側では常に false */
 bool linea_dex_active(void);
 
+/* リモートモード（Galaxy のアプリ経由で Mac を操作している）か。linea_remote.c */
+bool linea_remote_active(void);
+
 /* DeX モードの既定値（LiNEA40 Studio で変えていないとき） */
 #define LINEA_DEX_CURSOR_DEFAULT 600
 #define LINEA_DEX_SCROLL_INVERT_DEFAULT 1

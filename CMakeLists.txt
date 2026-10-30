@@ -24,6 +24,11 @@ if((NOT CONFIG_ZMK_SPLIT) OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
   # 設定（linea_settings.c）がトラボのある右手側にしか無いので、ZMK_POINTING のときだけ
   if(CONFIG_ZMK_POINTING)
     target_sources(app PRIVATE src/linea_dex.c)
+    # リモートモード（Galaxy のアプリ経由で Mac を操作する）。ZMK が送るレポートを --wrap で横取りする
+    if(CONFIG_ZMK_BLE)
+      target_sources(app PRIVATE src/linea_remote.c)
+      zephyr_ld_options(-Wl,--wrap=zmk_endpoints_send_report -Wl,--wrap=zmk_endpoints_send_mouse_report)
+    endif()
   endif()
 endif()
 

@@ -61,6 +61,10 @@ static struct held held[HELD_MAX];
 static bool switcher; /* ⌘Tab で Alt を押したまま */
 
 bool linea_dex_active(void) {
+    /* リモートモード（linea_remote.c）の間は Mac にそのまま渡すので、置き換えない */
+    if (linea_remote_active()) {
+        return false;
+    }
     int profile = linea_setting_get(LINEA_SET_DEX_PROFILE, DEX_PROFILE_DEFAULT);
     if (profile <= 0) {
         return false;
