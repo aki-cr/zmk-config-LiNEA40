@@ -14,8 +14,9 @@
  * カーソルの速さとスクロールの向き・量も DeX 用にする（linea_accel.c・linea_dex_scroll.c）
  *
  *   ⌥← / ⌥→ / ⌥Backspace / ⌥Delete → Ctrl+同じキー（単語単位）
- *   キーマップに書いた Mac 用の Ctrl つきキー: ⌃A / ⌃E → Home / End、⌃↑ / ⌃↓ / ⌃← / ⌃→（Mission Control・デスクトップの切り替え。DeX に同じ操作が無い）
- *   → Meta+同じ矢印（ウィンドウの最大化・最小化・左右に寄せる）
+ *   キーマップに書いた Mac 用の Ctrl つきキー: ⌃A / ⌃E → Home / End、⌃↑（Mission Control）→ Meta+Tab（最近のアプリ）、
+ *   ⌃← / ⌃→ / ⌃↓（デスクトップの切り替えなど。DeX に同じ操作が無い）→ 何も送らない
+ *   押している Ctrl + 矢印 → Meta+矢印（ウィンドウの最大化・最小化・左右に寄せる）
  *
  * 置き換えは、キーを押したときに決めて離すときも同じにする（押している間にプロファイルが変わっても、押しっぱなしにならない）。
  * ZMK の hid_listener より前にキーの知らせを受け取って中身を書き換える。消したい修飾キーは hid の masked_modifiers で隠す。
@@ -284,6 +285,22 @@ static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h
         }
     }
 
+    /* 押している Ctrl（19 番の長押しなど）+ 矢印 → Meta+矢印（ウィンドウの最大化・最小化・左右に寄せる）。
+     * Ctrl+矢印の単語移動は ⌥←→ から送るので、ここは空いている（2026-11-05 ユーザー指定。キーマップの ⌃← などのキーは使わない） */
+    if ((zmk_hid_get_explicit_mods() & CTL) && !((zmk_hid_get_explicit_mods() | imp) & (SFT | ALT))) {
+        switch (k) {
+        case HID_USAGE_KEY_KEYBOARD_UPARROW:
+        case HID_USAGE_KEY_KEYBOARD_DOWNARROW:
+        case HID_USAGE_KEY_KEYBOARD_LEFTARROW:
+        case HID_USAGE_KEY_KEYBOARD_RIGHTARROW:
+            h->mask = CTL;
+            h->implicit = MOD_LGUI;
+            return true;
+        default:
+            break;
+        }
+    }
+
     /* キーマップに書いた Mac 用の Ctrl つきキー（押している Ctrl はそのまま Ctrl） */
     if ((imp & CTL) && !(zmk_hid_get_explicit_mods() & CTL)) {
         switch (k) {
@@ -294,14 +311,16 @@ static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h
             h->implicit = imp & ~CTL;
             return true;
         case HID_USAGE_KEY_KEYBOARD_UPARROW:
-        case HID_USAGE_KEY_KEYBOARD_DOWNARROW:
+            h->keycode = HID_USAGE_KEY_KEYBOARD_TAB;
+            h->implicit = MOD_LGUI;
+            return true;
         case HID_USAGE_KEY_KEYBOARD_LEFTARROW:
         case HID_USAGE_KEY_KEYBOARD_RIGHTARROW:
-            /* DeX にデスクトップの一覧・切り替えは無い。代わりにウィンドウの操作（Meta+↑ 最大化 / ↓ 最小化 / ←→ 左右に寄せる） */
+        case HID_USAGE_KEY_KEYBOARD_DOWNARROW:
             if (imp & ~CTL) {
                 return false;
             }
-            h->implicit = MOD_LGUI;
+            h->swallow = true;
             return true;
         default:
             return false;
