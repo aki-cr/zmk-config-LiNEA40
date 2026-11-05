@@ -16,7 +16,7 @@
  *   ⌥← / ⌥→ / ⌥Backspace / ⌥Delete → Ctrl+同じキー（単語単位）
  *   キーマップに書いた Mac 用の Ctrl つきキー: ⌃A / ⌃E → Home / End、⌃↑（Mission Control）→ Meta+Tab（最近のアプリ）、
  *   ⌃← / ⌃→ / ⌃↓（デスクトップの切り替えなど。DeX に同じ操作が無い）→ 何も送らない
- *   押している Ctrl + 矢印 → Meta+矢印（ウィンドウの最大化・最小化・左右に寄せる）
+ *   19 番の長押し（右 Ctrl / 右 Alt）+ 矢印 → Meta+矢印（ウィンドウの最大化・最小化・左右に寄せる）
  *
  * 置き換えは、キーを押したときに決めて離すときも同じにする（押している間にプロファイルが変わっても、押しっぱなしにならない）。
  * ZMK の hid_listener より前にキーの知らせを受け取って中身を書き換える。消したい修飾キーは hid の masked_modifiers で隠す。
@@ -260,6 +260,24 @@ static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h
         }
     }
 
+    /* 19 番の長押し + 矢印 → Meta+矢印（ウィンドウの最大化・最小化・左右に寄せる。2026-11-05 ユーザー指定）。
+     * 19 番は base では右 Ctrl、レイヤー3 では右 Alt。親指とほぼ同時に押すのでどちらにもなる。
+     * 単語移動（⌥←→）は左 Alt（31 番）から送るので、右 Alt と Ctrl だけを見る */
+    uint8_t held_mods = zmk_hid_get_explicit_mods();
+    if ((held_mods & (CTL | MOD_RALT)) && !((held_mods | imp) & (SFT | MOD_LALT))) {
+        switch (k) {
+        case HID_USAGE_KEY_KEYBOARD_UPARROW:
+        case HID_USAGE_KEY_KEYBOARD_DOWNARROW:
+        case HID_USAGE_KEY_KEYBOARD_LEFTARROW:
+        case HID_USAGE_KEY_KEYBOARD_RIGHTARROW:
+            h->mask = CTL | MOD_RALT;
+            h->implicit = MOD_LGUI;
+            return true;
+        default:
+            break;
+        }
+    }
+
     if (alt) {
         switch (k) {
         case HID_USAGE_KEY_KEYBOARD_SPACEBAR:
@@ -278,22 +296,6 @@ static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h
             return true;
         default:
             return false;
-        }
-    }
-
-    /* 押している Ctrl（19 番の長押しなど）+ 矢印 → Meta+矢印（ウィンドウの最大化・最小化・左右に寄せる）。
-     * Ctrl+矢印の単語移動は ⌥←→ から送るので、ここは空いている（2026-11-05 ユーザー指定。キーマップの ⌃← などのキーは使わない） */
-    if ((zmk_hid_get_explicit_mods() & CTL) && !((zmk_hid_get_explicit_mods() | imp) & (SFT | ALT))) {
-        switch (k) {
-        case HID_USAGE_KEY_KEYBOARD_UPARROW:
-        case HID_USAGE_KEY_KEYBOARD_DOWNARROW:
-        case HID_USAGE_KEY_KEYBOARD_LEFTARROW:
-        case HID_USAGE_KEY_KEYBOARD_RIGHTARROW:
-            h->mask = CTL;
-            h->implicit = MOD_LGUI;
-            return true;
-        default:
-            break;
         }
     }
 
