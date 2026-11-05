@@ -122,7 +122,7 @@ static void tap_shift_home(void) {
 
 /*
  * 英数 / かな: Gboard はかな（LANG1）を「日本語⇔英語の切り替え」として扱い、英数（LANG2）では何もしない（2026-10-27 確認）。
- * そこで今どちらかをここで覚えておき、違うときだけ切り替え（LANG1）を送る。Mac と同じく、英数を押せば必ず英語・かなを押せば必ず日本語。
+ * そこで今どちらかをここで覚えておき、違うときだけ切り替え（Ctrl+Space）を送る。Mac と同じく、英数を押せば必ず英語・かなを押せば必ず日本語。
  * 同じキーは何回押しても何もしない（続けて2回押すと合わせ直す形は、ふだん2回押したときに逆へ切り替わった）。
  * 覚えている向きと Gboard がずれたとき（ホーム画面で押した、Gboard 側で切り替えたなど）は、⌥+英数 / ⌥+かな で
  * 覚えている向きに関係なく切り替えを送って合わせ直す。
@@ -146,7 +146,9 @@ static bool translate_lang(bool want_ja, struct held *h) {
         return true;
     }
     lang_ja = want_ja;
-    h->keycode = HID_USAGE_KEY_KEYBOARD_LANG1;
+    /* 切り替えは Ctrl+Space（DeX ではかな＝LANG1 が効かなかった。Ctrl+Space は DeX で効く。2026-11-05） */
+    h->keycode = HID_USAGE_KEY_KEYBOARD_SPACEBAR;
+    h->implicit = MOD_LCTL;
     return true;
 }
 
