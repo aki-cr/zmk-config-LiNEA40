@@ -4,7 +4,7 @@
  *
  *   ⌘ → Ctrl（⌘C / ⌘V / ⌘Z / ⌘S / ⌘W / ⌘T / ⌘F / ⌘A / ⌘+クリック などはこれで同じになる）
  *   ⌘Tab → Alt+Tab（⌘を押している間は Alt も押したまま。続けて Tab で次のアプリ）
- *   ⌘Space → Windows キーだけのあと Alt+A（DeX と Fold の画面のアプリ一覧）    ⌘Q → Alt+F4    ⌘[ → Meta+Backspace（戻る）
+ *   ⌘Space → Windows キーだけ（DeX のアプリ一覧）    ⌥Space → Alt+A（Fold の画面のアプリ一覧）    ⌘Q → Alt+F4    ⌘[ → Meta+Backspace（戻る）
  *   ⌘H → Meta+Enter（ホームへ戻る）           ⌘/ → Meta+/（ショートカット一覧）
  *   ⌘← / ⌘→ → Home / End                 ⌘↑ / ⌘↓ → Ctrl+Home / Ctrl+End
  *   ⌘Backspace → Shift+Home のあと Backspace（行頭まで消す）
@@ -156,14 +156,6 @@ static bool translate_lang(bool want_ja, struct held *h) {
     return true;
 }
 
-/* ⌘Space: 先に Windows キーだけを1回送る（DeX のアプリ一覧） */
-static void tap_meta(void) {
-    zmk_hid_implicit_modifiers_press(MOD_LGUI);
-    zmk_endpoints_send_report(HID_USAGE_KEY);
-    zmk_hid_implicit_modifiers_release();
-    zmk_endpoints_send_report(HID_USAGE_KEY);
-}
-
 /* 押したキーの置き換えを決める。置き換えないときは false */
 static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h) {
     uint32_t k = ev->keycode;
@@ -234,11 +226,11 @@ static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h
             h->implicit = (h->implicit & ~CTL) | MOD_LALT;
             return true;
         case HID_USAGE_KEY_KEYBOARD_SPACEBAR:
-            /* DeX ではアプリ一覧は Windows キーだけ（2026-11-05 確認）、Fold の画面では Alt+A（2026-10-26 確認）。
-             * 先に Windows キーだけを1回送ってから Alt+A を押す（逆の順では、Fold の画面で開いた一覧を Windows キーが閉じた） */
-            h->keycode = HID_USAGE_KEY_KEYBOARD_A;
+            /* DeX ではアプリ一覧は Windows キーだけ（2026-11-05 確認）。押して離すと Windows キーだけを押した形になる。
+             * Fold の画面（Alt+A）は ⌥Space（両方を続けて送ると、互いに一覧を閉じてしまった） */
+            h->keycode = HID_USAGE_KEY_KEYBOARD_LEFT_GUI;
             h->mask = CTL;
-            h->implicit = MOD_LALT;
+            h->implicit = 0;
             return true;
         case HID_USAGE_KEY_KEYBOARD_LEFT_BRACKET_AND_LEFT_BRACE:
             /* ⌘[ → Meta+Backspace（戻る） */
@@ -273,6 +265,13 @@ static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h
 
     if (alt) {
         switch (k) {
+        case HID_USAGE_KEY_KEYBOARD_SPACEBAR:
+            /* ⌥Space → Alt+A（Fold の画面のアプリ一覧。⌘Space の Windows キーは Fold の画面では効かず、続けて送ると一覧を閉じた） */
+            if ((zmk_hid_get_explicit_mods() | imp) & (CTL | SFT)) {
+                return false;
+            }
+            h->keycode = HID_USAGE_KEY_KEYBOARD_A;
+            return true;
         case HID_USAGE_KEY_KEYBOARD_LEFTARROW:
         case HID_USAGE_KEY_KEYBOARD_RIGHTARROW:
         case HID_USAGE_KEY_KEYBOARD_DELETE_BACKSPACE:
@@ -360,9 +359,6 @@ static int dex_listener(const zmk_event_t *eh) {
     }
     if (h->orig == HID_USAGE_KEY_KEYBOARD_DELETE_BACKSPACE && h->mask == CTL) {
         tap_shift_home();
-    }
-    if (h->orig == HID_USAGE_KEY_KEYBOARD_SPACEBAR && h->keycode == HID_USAGE_KEY_KEYBOARD_A) {
-        tap_meta();
     }
     ev->keycode = h->keycode;
     ev->implicit_modifiers = h->implicit;
