@@ -155,7 +155,9 @@ static int dex_scroll_handle_event(const struct device *dev, struct input_event 
     data->last_time = now;
 
     int32_t v = event->value;
-    if (linea_setting_get(LINEA_SET_DEX_SCROLL_INVERT, LINEA_DEX_SCROLL_INVERT_DEFAULT)) {
+    /* 横は逆にしない（Android の横ホイールは Mac と向きの決まりが逆で、逆にすると Mac と反対に流れた。2026-11-05） */
+    if (event->code == INPUT_REL_WHEEL &&
+        linea_setting_get(LINEA_SET_DEX_SCROLL_INVERT, LINEA_DEX_SCROLL_INVERT_DEFAULT)) {
         v = -v;
     }
     int32_t milli = linea_setting_get(LINEA_SET_DEX_SCROLL_SPEED, LINEA_DEX_SCROLL_SPEED_DEFAULT);
