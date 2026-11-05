@@ -4,7 +4,7 @@
  *
  *   ⌘ → Ctrl（⌘C / ⌘V / ⌘Z / ⌘S / ⌘W / ⌘T / ⌘F / ⌘A / ⌘+クリック などはこれで同じになる）
  *   ⌘Tab → Alt+Tab（⌘を押している間は Alt も押したまま。続けて Tab で次のアプリ）
- *   ⌘Space → Alt+A（DeX のアプリ一覧）    ⌘Q → Alt+F4
+ *   ⌘Space → Alt+A のあと Windows キー（Fold の画面と DeX のアプリ一覧）    ⌘Q → Alt+F4    ⌘[ → Meta+Backspace（戻る）
  *   ⌘H → Meta+Enter（ホームへ戻る）           ⌘/ → Meta+/（ショートカット一覧）
  *   ⌘← / ⌘→ → Home / End                 ⌘↑ / ⌘↓ → Ctrl+Home / Ctrl+End
  *   ⌘Backspace → Shift+Home のあと Backspace（行頭まで消す）
@@ -150,6 +150,16 @@ static bool translate_lang(bool want_ja, struct held *h) {
     return true;
 }
 
+/* ⌘Space: 先に Alt+A を1回送る（Fold の画面のアプリ一覧） */
+static void tap_alt_a(void) {
+    zmk_hid_implicit_modifiers_press(MOD_LALT);
+    zmk_hid_press(ZMK_HID_USAGE(HID_USAGE_KEY, HID_USAGE_KEY_KEYBOARD_A));
+    zmk_endpoints_send_report(HID_USAGE_KEY);
+    zmk_hid_release(ZMK_HID_USAGE(HID_USAGE_KEY, HID_USAGE_KEY_KEYBOARD_A));
+    zmk_hid_implicit_modifiers_release();
+    zmk_endpoints_send_report(HID_USAGE_KEY);
+}
+
 /* 押したキーの置き換えを決める。置き換えないときは false */
 static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h) {
     uint32_t k = ev->keycode;
@@ -220,10 +230,17 @@ static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h
             h->implicit = (h->implicit & ~CTL) | MOD_LALT;
             return true;
         case HID_USAGE_KEY_KEYBOARD_SPACEBAR:
-            /* Windows キーだけでは開かなかった。この Galaxy のアプリ一覧は Alt+A（2026-10-26 確認） */
-            h->keycode = HID_USAGE_KEY_KEYBOARD_A;
+            /* Fold の画面ではアプリ一覧は Alt+A（2026-10-26 確認）、DeX では Windows キーだけ（ショートカット一覧にはない）。
+             * Alt+A を1回送ってから Windows キーを押す（離したときに Windows キーだけを押した形になる） */
+            h->keycode = HID_USAGE_KEY_KEYBOARD_LEFT_GUI;
             h->mask = CTL;
-            h->implicit = MOD_LALT;
+            h->implicit = 0;
+            return true;
+        case HID_USAGE_KEY_KEYBOARD_LEFT_BRACKET_AND_LEFT_BRACE:
+            /* ⌘[ → Meta+Backspace（戻る） */
+            h->keycode = HID_USAGE_KEY_KEYBOARD_DELETE_BACKSPACE;
+            h->mask = CTL;
+            h->implicit = MOD_LGUI;
             return true;
         case HID_USAGE_KEY_KEYBOARD_SLASH_AND_QUESTION_MARK:
             /* ⌘/ → Meta+/（DeX のショートカット一覧。⌘ は Ctrl にしているので、これが無いと一覧を出せない） */
@@ -341,6 +358,9 @@ static int dex_listener(const zmk_event_t *eh) {
     }
     if (h->orig == HID_USAGE_KEY_KEYBOARD_DELETE_BACKSPACE && h->mask == CTL) {
         tap_shift_home();
+    }
+    if (h->orig == HID_USAGE_KEY_KEYBOARD_SPACEBAR && h->keycode == HID_USAGE_KEY_KEYBOARD_LEFT_GUI) {
+        tap_alt_a();
     }
     ev->keycode = h->keycode;
     ev->implicit_modifiers = h->implicit;
