@@ -5,7 +5,7 @@
  *   ⌘ → Ctrl（⌘C / ⌘V / ⌘Z / ⌘S / ⌘W / ⌘T / ⌘F / ⌘A / ⌘+クリック などはこれで同じになる）
  *   ⌘Tab → Alt+Tab（⌘を押している間は Alt も押したまま。続けて Tab で次のアプリ）
  *   ⌘Space → Alt+A（DeX のアプリ一覧）    ⌘Q → Alt+F4
- *   ⌘H → Meta+Enter（ホームへ戻る）
+ *   ⌘H → Meta+Enter（ホームへ戻る）           ⌘/ → Meta+/（ショートカット一覧）
  *   ⌘← / ⌘→ → Home / End                 ⌘↑ / ⌘↓ → Ctrl+Home / Ctrl+End
  *   ⌘Backspace → Shift+Home のあと Backspace（行頭まで消す）
  *   ⇧⌘3 / ⇧⌘4 / ⇧⌘5 → PrintScreen（Android のスクリーンショット）
@@ -228,6 +228,11 @@ static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h
             h->keycode = HID_USAGE_KEY_KEYBOARD_A;
             h->mask = CTL;
             h->implicit = MOD_LALT;
+            return true;
+        case HID_USAGE_KEY_KEYBOARD_SLASH_AND_QUESTION_MARK:
+            /* ⌘/ → Meta+/（DeX のショートカット一覧。⌘ は Ctrl にしているので、これが無いと一覧を出せない） */
+            h->mask = CTL;
+            h->implicit = MOD_LGUI;
             return true;
         case HID_USAGE_KEY_KEYBOARD_H:
             h->keycode = HID_USAGE_KEY_KEYBOARD_RETURN_ENTER;
