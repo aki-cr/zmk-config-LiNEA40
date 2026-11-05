@@ -4,7 +4,7 @@
  *
  *   ⌘ → Ctrl（⌘C / ⌘V / ⌘Z / ⌘S / ⌘W / ⌘T / ⌘F / ⌘A / ⌘+クリック などはこれで同じになる）
  *   ⌘Tab → Alt+Tab（⌘を押している間は Alt も押したまま。続けて Tab で次のアプリ）
- *   ⌘Space → Alt+A のあと Windows キー（Fold の画面と DeX のアプリ一覧）    ⌘Q → Alt+F4    ⌘[ → Meta+Backspace（戻る）
+ *   ⌘Space → Windows キーだけのあと Alt+A（DeX と Fold の画面のアプリ一覧）    ⌘Q → Alt+F4    ⌘[ → Meta+Backspace（戻る）
  *   ⌘H → Meta+Enter（ホームへ戻る）           ⌘/ → Meta+/（ショートカット一覧）
  *   ⌘← / ⌘→ → Home / End                 ⌘↑ / ⌘↓ → Ctrl+Home / Ctrl+End
  *   ⌘Backspace → Shift+Home のあと Backspace（行頭まで消す）
@@ -14,8 +14,8 @@
  * カーソルの速さとスクロールの向き・量も DeX 用にする（linea_accel.c・linea_dex_scroll.c）
  *
  *   ⌥← / ⌥→ / ⌥Backspace / ⌥Delete → Ctrl+同じキー（単語単位）
- *   キーマップに書いた Mac 用の Ctrl つきキー: ⌃A / ⌃E → Home / End、⌃↑（Mission Control）→ Meta+Tab（最近のアプリ）、
- *   ⌃← / ⌃→ / ⌃↓（デスクトップの切り替えなど。DeX に同じ操作が無い）→ 何も送らない
+ *   キーマップに書いた Mac 用の Ctrl つきキー: ⌃A / ⌃E → Home / End、⌃↑ / ⌃↓ / ⌃← / ⌃→（Mission Control・デスクトップの切り替え。DeX に同じ操作が無い）
+ *   → Meta+同じ矢印（ウィンドウの最大化・最小化・左右に寄せる）
  *
  * 置き換えは、キーを押したときに決めて離すときも同じにする（押している間にプロファイルが変わっても、押しっぱなしにならない）。
  * ZMK の hid_listener より前にキーの知らせを受け取って中身を書き換える。消したい修飾キーは hid の masked_modifiers で隠す。
@@ -156,12 +156,10 @@ static bool translate_lang(bool want_ja, struct held *h) {
     return true;
 }
 
-/* ⌘Space: 先に Alt+A を1回送る（Fold の画面のアプリ一覧） */
-static void tap_alt_a(void) {
-    zmk_hid_implicit_modifiers_press(MOD_LALT);
-    zmk_hid_press(ZMK_HID_USAGE(HID_USAGE_KEY, HID_USAGE_KEY_KEYBOARD_A));
+/* ⌘Space: 先に Windows キーだけを1回送る（DeX のアプリ一覧） */
+static void tap_meta(void) {
+    zmk_hid_implicit_modifiers_press(MOD_LGUI);
     zmk_endpoints_send_report(HID_USAGE_KEY);
-    zmk_hid_release(ZMK_HID_USAGE(HID_USAGE_KEY, HID_USAGE_KEY_KEYBOARD_A));
     zmk_hid_implicit_modifiers_release();
     zmk_endpoints_send_report(HID_USAGE_KEY);
 }
@@ -236,11 +234,11 @@ static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h
             h->implicit = (h->implicit & ~CTL) | MOD_LALT;
             return true;
         case HID_USAGE_KEY_KEYBOARD_SPACEBAR:
-            /* Fold の画面ではアプリ一覧は Alt+A（2026-10-26 確認）、DeX では Windows キーだけ（ショートカット一覧にはない）。
-             * Alt+A を1回送ってから Windows キーを押す（離したときに Windows キーだけを押した形になる） */
-            h->keycode = HID_USAGE_KEY_KEYBOARD_LEFT_GUI;
+            /* DeX ではアプリ一覧は Windows キーだけ（2026-11-05 確認）、Fold の画面では Alt+A（2026-10-26 確認）。
+             * 先に Windows キーだけを1回送ってから Alt+A を押す（逆の順では、Fold の画面で開いた一覧を Windows キーが閉じた） */
+            h->keycode = HID_USAGE_KEY_KEYBOARD_A;
             h->mask = CTL;
-            h->implicit = 0;
+            h->implicit = MOD_LALT;
             return true;
         case HID_USAGE_KEY_KEYBOARD_LEFT_BRACKET_AND_LEFT_BRACE:
             /* ⌘[ → Meta+Backspace（戻る） */
@@ -297,16 +295,14 @@ static bool translate(const struct zmk_keycode_state_changed *ev, struct held *h
             h->implicit = imp & ~CTL;
             return true;
         case HID_USAGE_KEY_KEYBOARD_UPARROW:
-            h->keycode = HID_USAGE_KEY_KEYBOARD_TAB;
-            h->implicit = MOD_LGUI;
-            return true;
+        case HID_USAGE_KEY_KEYBOARD_DOWNARROW:
         case HID_USAGE_KEY_KEYBOARD_LEFTARROW:
         case HID_USAGE_KEY_KEYBOARD_RIGHTARROW:
-        case HID_USAGE_KEY_KEYBOARD_DOWNARROW:
+            /* DeX にデスクトップの一覧・切り替えは無い。代わりにウィンドウの操作（Meta+↑ 最大化 / ↓ 最小化 / ←→ 左右に寄せる） */
             if (imp & ~CTL) {
                 return false;
             }
-            h->swallow = true;
+            h->implicit = MOD_LGUI;
             return true;
         default:
             return false;
@@ -365,8 +361,8 @@ static int dex_listener(const zmk_event_t *eh) {
     if (h->orig == HID_USAGE_KEY_KEYBOARD_DELETE_BACKSPACE && h->mask == CTL) {
         tap_shift_home();
     }
-    if (h->orig == HID_USAGE_KEY_KEYBOARD_SPACEBAR && h->keycode == HID_USAGE_KEY_KEYBOARD_LEFT_GUI) {
-        tap_alt_a();
+    if (h->orig == HID_USAGE_KEY_KEYBOARD_SPACEBAR && h->keycode == HID_USAGE_KEY_KEYBOARD_A) {
+        tap_meta();
     }
     ev->keycode = h->keycode;
     ev->implicit_modifiers = h->implicit;
